@@ -138,3 +138,13 @@ def remove_from_list(lst, value=None, index=None):
 
 def test (k):
     return k+1  
+
+def print_list_as_column(lst):
+    """
+    Prints a list of items, one item per line.
+
+    Parameters:
+    - lst (list): The list of items to print.
+    """
+    for item in lst:
+        print(item)

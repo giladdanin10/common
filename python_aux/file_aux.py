@@ -211,3 +211,15 @@ def get_folder_files(in_folder, str_filter=None):
     filtered_files = filter_strs(all_files, str_filter)
     
     return filtered_files
+
+
+def add_directories_to_sys_path(top_directory: Path):
+    """
+    Recursively add all directories under the top_directory to sys.path.
+
+    Args:
+        top_directory (Path): The top-level directory to start the recursion.
+    """
+    for directory in top_directory.rglob('*'):
+        if directory.is_dir():
+            sys.path.append(str(directory))
