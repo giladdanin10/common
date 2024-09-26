@@ -10,6 +10,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 from ipywidgets import Label, VBox
 from ipyleaflet import Map, TileLayer
 import re
+from shapely.geometry import MultiPoint
 
 from ipywidgets import HTML
 import random
@@ -570,4 +571,30 @@ class map_display:
             'latitude': ('between', (lat_min, lat_max))
         }
         return filter_dict
+
+
+def create_map_points_from_df(df, lat_column='latitude', long_column='longitude',epsg=None):
+    # Create a geometry column from latitude and longitude
+    points = [Point(xy) for xy in zip(df[long_column], df[lat_column])]
+    
+    # # Create a GeoDataFrame
+    # gdf = gpd.GeoDataFrame(df, geometry=points)
+    
+    # if (epsg is not None):
+    #     gdf = gdf.to_crs(epsg=epsg)
+    # # Set the coordinate reference system (CRS), assuming WGS84 (EPSG:4326)
+    
+    # return gdf
+    return points
+
+
+def calculate_centroid(points):
+    # Create a MultiPoint object from the list of Point objects
+    multi_point = MultiPoint(points)
+    
+    # Get the centroid of the MultiPoint
+    centroid = multi_point.centroid
+    
+    return centroid
+
 

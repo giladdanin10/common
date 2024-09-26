@@ -1,5 +1,9 @@
 import sys
 from pathlib import Path
+import os
+import pickle
+import pandas as pd
+
 
 algo_path = Path(r'C:\work\code\AIS-R-D\algo')
 sys.path.append(str(algo_path))
@@ -36,20 +40,65 @@ def load_df_from_file(file_name):
         return None,False
 
 
+import os
+import pickle
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+def get_file_name_extension(file_name):
+    return Path(file_name).suffix[1:]  # Remove the leading dot
+
 def save_var(var, file_name, var_name='var'):
-    print(f'save {var_name} to {file_name}')
+    file_ext = get_file_name_extension(file_name)
+    print(f'Saving {var_name} to {file_name}')
+    
     try:
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
+
+        if file_ext == 'pkl':  
+            # Save the variable to a pickle file
+            with open(file_name, 'wb') as file:
+                pickle.dump(var, file)
+            return True
         
-        # Save the variable to the file
-        with open(file_name, 'wb') as file:
-            pickle.dump(var, file)
-        return True
+        elif file_ext == 'csv':
+            # Handle DataFrame
+            if isinstance(var, pd.DataFrame):
+                var.to_csv(file_name, index=False, float_format='%.8f')  # Adjust precision if needed
+            
+            # Handle NumPy array
+            elif isinstance(var, np.ndarray):
+                # Check if the array contains only integers
+                if np.issubdtype(var.dtype, np.integer):
+                    np.savetxt(file_name, var, delimiter=',', fmt='%d')  # Use integer format
+                else:
+                    np.savetxt(file_name, var, delimiter=',', fmt='%.8f')  # Use floating-point format
+            
+            # Handle lists (converting to DataFrame first)
+            elif isinstance(var, list):
+                df = pd.DataFrame(var)
+                # Determine if the DataFrame contains only integers
+                if df.applymap(np.isreal).all().all() and df.applymap(float.is_integer).all().all():
+                    df.to_csv(file_name, index=False, header=False, float_format='%d')  # Use integer format
+                else:
+                    df.to_csv(file_name, index=False, header=False, float_format='%.8f')  # Use floating-point format
+            
+            else:
+                print(f'Unsupported variable type for CSV: {type(var)}')
+                return False
+            
+            return True
+
+        else:
+            print(f'Unsupported file extension: {file_ext}')
+            return False
+
     except Exception as e:
-        print(f'could not save {var_name} to {file_name}. Error: {e}')
+        print(f'Could not save {var_name} to {file_name}. Error: {e}')
         return False
-    
+
 
 def load_var(file_name, var_name='var'):
     status = True
@@ -71,10 +120,9 @@ def get_file_base_name(file_path):
     file_base, _ = os.path.splitext(file_name)
     return file_base
 
-    
-import os
-import pickle
-import pandas as pd
+def get_file_name_extension (file_name):
+    return Path(file_name).suffix
+
 
 def save_var(var, file_name, var_name='var'):
     print(f'save {var_name} to {file_name}')
