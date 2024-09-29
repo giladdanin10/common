@@ -33,6 +33,6 @@ else:
     output_shapefile = None  # Optional, set None to avoid saving to shapefile
     # create_spoof_layer_mod(events_df,layer_name)
 
-    create_spoof_layers(events_df,layer_name)
+    create_spoof_layers(events_df,events_clusters,layer_name,show_none_clustered_events=False)
     # create_spoof_layer(csv_file, 'kuku', output_shapefile=None)
                        

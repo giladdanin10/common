@@ -32,7 +32,7 @@ from matplotlib import cm  # Import colormap functionality from matplotlib
 from matplotlib.colors import to_hex  # Convert RGB to hex
 from PyQt5.QtGui import QColor  # Import QColor for handling colors
 
-def create_spoof_layers(events_df, events_clusters,layer_name, output_shapefile=None,show_none_clustered_events=False):
+def create_spoof_layers(events_df, layer_name, output_shapefile=None,show_none_clustered_events=False):
     """
     Creates QGIS layers with 3 points from an events DataFrame and draws lines between them.
     The second point is placed in a separate layer and is twice as large.
@@ -77,75 +77,79 @@ def create_spoof_layers(events_df, events_clusters,layer_name, output_shapefile=
     point_layer_2.updateFields()
     line_layer.updateFields()
 
-    cluster_nums = []    
-    for j,cluster in enumerate(events_clusters):
-        cluster_num = cluster['cluster_num']
-        indices = cluster['events_df_index']  # Get the list of indices for this cluster
+    cluster_nums = []
+    cluster_num_set = set()  # To keep track of unique cluster numbers
 
-        cluster_nums.append(cluster_num)
+    # Iterate through the events DataFrame and add points and lines to the layers
+    for index, row in events_df.iterrows():
+        try:
 
-        
-        for i,index in enumerate(indices):
-            row = events_df.loc[index]  # Use loc to access the event from events_df          
-            try:
-                # Skip cluster -1 if not displaying none-clustered events
-                if not show_none_clustered_events and cluster_num == -1:
-                    continue
 
-    # Point 1: start_latitude_pre, start_longitude_pre
-                start_latitude_pre = float(row['start_latitude_pre']) if row['start_latitude_pre'] else None
-                start_longitude_pre = float(row['start_longitude_pre']) if row['start_longitude_pre'] else None
-                
-                # Point 2: start_latitude, start_longitude (this will be in a separate layer)
-                start_latitude = float(row['start_latitude']) if row['start_latitude'] else None
-                start_longitude = float(row['start_longitude']) if row['start_longitude'] else None
-                
-                # Point 3: end_latitude, end_longitude
-                end_latitude = float(row['end_latitude']) if row['end_latitude'] else None
-                end_longitude = float(row['end_longitude']) if row['end_longitude'] else None
-                
-                if not (start_latitude_pre and start_longitude_pre and start_latitude and start_longitude and end_latitude and end_longitude):
-                    continue  # Skip rows with missing or invalid data
-                
-                # Create features for points 1 and 3
-                point1 = QgsFeature()
-                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude_pre, start_latitude_pre)))
-                point1.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
-                provider_1_3.addFeature(point1)
+            # Collect unique cluster numbers in the original order
+            cluster_num = row['cluster_num']
 
-                point3 = QgsFeature()
-                point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_longitude, end_latitude)))
-                point3.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
-                provider_1_3.addFeature(point3)
-
-                # Create a feature for point 2
-                point2 = QgsFeature()
-                point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude, start_latitude)))
-                point2.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
-                provider_2.addFeature(point2)
-
-                # Create a line between Point 1 and Point 2
-                line1 = QgsFeature()
-                line1.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(start_longitude_pre, start_latitude_pre),
-                    QgsPointXY(start_longitude, start_latitude)
-                ]))
-                line1.setAttributes([cluster_num])
-                line_provider.addFeature(line1)
-
-                # Create a line between Point 3 and Point 2
-                line2 = QgsFeature()
-                line2.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(end_longitude, end_latitude),
-                    QgsPointXY(start_longitude, start_latitude)
-                ]))
-                line2.setAttributes([cluster_num])
-                line_provider.addFeature(line2)
-
-            except ValueError as e:
-                print(f"Error processing row {index}: {e}")
+            # Skip cluster -1 if not displaying none-clustered events
+            if not show_none_clustered_events and cluster_num == -1:
                 continue
 
+
+            if cluster_num not in cluster_num_set:
+                cluster_nums.append(cluster_num)
+                cluster_num_set.add(cluster_num)
+
+            # Point 1: start_latitude_pre, start_longitude_pre
+            start_latitude_pre = float(row['start_latitude_pre']) if row['start_latitude_pre'] else None
+            start_longitude_pre = float(row['start_longitude_pre']) if row['start_longitude_pre'] else None
+            
+            # Point 2: start_latitude, start_longitude (this will be in a separate layer)
+            start_latitude = float(row['start_latitude']) if row['start_latitude'] else None
+            start_longitude = float(row['start_longitude']) if row['start_longitude'] else None
+            
+            # Point 3: end_latitude, end_longitude
+            end_latitude = float(row['end_latitude']) if row['end_latitude'] else None
+            end_longitude = float(row['end_longitude']) if row['end_longitude'] else None
+            
+            if not (start_latitude_pre and start_longitude_pre and start_latitude and start_longitude and end_latitude and end_longitude):
+                continue  # Skip rows with missing or invalid data
+            
+            # Create features for points 1 and 3
+            point1 = QgsFeature()
+            point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude_pre, start_latitude_pre)))
+            point1.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+            provider_1_3.addFeature(point1)
+
+            point3 = QgsFeature()
+            point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_longitude, end_latitude)))
+            point3.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+            provider_1_3.addFeature(point3)
+
+            # Create a feature for point 2
+            point2 = QgsFeature()
+            point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude, start_latitude)))
+            point2.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+            provider_2.addFeature(point2)
+
+            # Create a line between Point 1 and Point 2
+            line1 = QgsFeature()
+            line1.setGeometry(QgsGeometry.fromPolylineXY([
+                QgsPointXY(start_longitude_pre, start_latitude_pre),
+                QgsPointXY(start_longitude, start_latitude)
+            ]))
+            line1.setAttributes([cluster_num])
+            line_provider.addFeature(line1)
+
+            # Create a line between Point 3 and Point 2
+            line2 = QgsFeature()
+            line2.setGeometry(QgsGeometry.fromPolylineXY([
+                QgsPointXY(end_longitude, end_latitude),
+                QgsPointXY(start_longitude, start_latitude)
+            ]))
+            line2.setAttributes([cluster_num])
+            line_provider.addFeature(line2)
+
+        except ValueError as e:
+            print(f"Error processing row {index}: {e}")
+            continue
 
     # Add the point and line layers to the QGIS project
     QgsProject.instance().addMapLayer(point_layer_1_3)
