@@ -134,3 +134,5 @@ class QGIS_Utils:
         tree.write(output_file, encoding='utf-8', xml_declaration=True)
 
         print(f"Filter file created: {output_file}")
+
+
