@@ -43,7 +43,7 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
     Parameters:
     - events_df: DataFrame containing event information with columns:
         ['start_latitude_pre', 'start_longitude_pre', 'start_latitude', 'start_longitude', 
-         'end_latitude', 'end_longitude', 'start_time', 'end_time', 'cluster_num']
+         'end_latitude', 'end_longitude', 'start_time', 'end_time', 'cluster_num', 'name']
     - layer_name: Name of the QGIS layers.
     - output_shapefile: Path to save the layers as shapefiles (optional).
     """
@@ -68,12 +68,13 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
     polygon_layer = QgsVectorLayer('Polygon?crs=EPSG:4326', layer_name + '_polygons', 'memory')
     polygon_provider = polygon_layer.dataProvider()
 
-    # Define fields for the point and line layers
+    # Define fields for the point and line layers, including 'name'
     fields = [
         QgsField('cluster', QVariant.String),
         QgsField('start_time', QVariant.String),
         QgsField('end_time', QVariant.String),
         QgsField('type', QVariant.String),
+        QgsField('name', QVariant.String)  # Added name field
     ]
     provider_1_3.addAttributes(fields)
     provider_2.addAttributes(fields)
@@ -117,37 +118,33 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
                 point1 = QgsFeature()
                 point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude_pre, start_latitude_pre)))
                 point1.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), 
-                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type'], row['name']])  # Include name
                 provider_1_3.addFeature(point1)
 
                 point3 = QgsFeature()
                 point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_longitude, end_latitude)))
                 point3.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), 
-                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type'], row['name']])  # Include name
                 provider_1_3.addFeature(point3)
 
                 # Create a feature for point 2
                 point2 = QgsFeature()
                 point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude, start_latitude)))
                 point2.setAttributes([cluster_num, row['start_time'].strftime("%Y-%m-%d %H:%M:%S"), 
-                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type']])
+                                      row['end_time'].strftime("%Y-%m-%d %H:%M:%S"), row['type'], row['name']])  # Include name
                 provider_2.addFeature(point2)
 
                 # Create a line between Point 1 and Point 2
                 line1 = QgsFeature()
-                line1.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(start_longitude_pre, start_latitude_pre),
-                    QgsPointXY(start_longitude, start_latitude)
-                ]))
+                line1.setGeometry(QgsGeometry.fromPolylineXY([QgsPointXY(start_longitude_pre, start_latitude_pre),
+                                                              QgsPointXY(start_longitude, start_latitude)]))
                 line1.setAttributes([cluster_num])
                 line_provider.addFeature(line1)
 
                 # Create a line between Point 3 and Point 2
                 line2 = QgsFeature()
-                line2.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(end_longitude, end_latitude),
-                    QgsPointXY(start_longitude, start_latitude)
-                ]))
+                line2.setGeometry(QgsGeometry.fromPolylineXY([QgsPointXY(end_longitude, end_latitude),
+                                                              QgsPointXY(start_longitude, start_latitude)]))
                 line2.setAttributes([cluster_num])
                 line_provider.addFeature(line2)
 
@@ -163,7 +160,7 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
                         polygon = QgsFeature()
                         polygon_geom = QgsGeometry.fromPolygonXY([polygon_points])
                         polygon.setGeometry(polygon_geom)
-                        polygon.setAttributes([cluster_num, None, None, None])  # Adjust attributes as needed
+                        polygon.setAttributes([cluster_num, None, None, None, row['name']])  # Include name in polygon attributes
                         polygon_provider.addFeature(polygon)
 
             except ValueError as e:
@@ -182,8 +179,6 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
     line_categories = []
     polygon_categories = []  # For polygon layer
     
-
-
     # Create a colormap from matplotlib
     colormap = cm.get_cmap('tab20', len(cluster_nums))  # Using 'tab20' for distinct colors
 
@@ -226,80 +221,6 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
     polygon_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', polygon_categories)
     polygon_layer.setRenderer(polygon_categorized_renderer)  # Apply to polygon layer
 
-
-
-    # for i, cluster_num in enumerate(cluster_nums):
-    #     # Create symbols for points 1 and 3
-    #     symbol_1_3 = QgsMarkerSymbol.defaultSymbol(point_layer_1_3.geometryType())
-    #     symbol_2 = QgsMarkerSymbol.defaultSymbol(point_layer_2.geometryType())
-    #     line_symbol = QgsLineSymbol.defaultSymbol(line_layer.geometryType())
-
-    #     # Set polygon symbol to be transparent with a thicker outline
-    #     polygon_fill_symbol = QgsFillSymbol.createSimple({
-    #         'color': 'transparent', 
-    #         'outline_color': to_hex(colormap(i))
-    #     })
-
-    #     # Create a thicker outline symbol for the polygon
-    #     outline_symbol = QgsLineSymbol.createSimple({
-    #         'color': to_hex(colormap(i)),  # Use the same color as the fill's outline
-    #         'width': '2'  # Set the width to 2 (adjust as needed)
-    #     })
-        
-    #     # Combine fill and outline symbols into a single fill symbol
-    #     combined_polygon_symbol = QgsFillSymbol()
-    #     combined_polygon_symbol.appendSymbolLayer(polygon_fill_symbol.symbolLayer(0))
-    #     combined_polygon_symbol.setSymbolLayer(0, outline_symbol.symbolLayer(0))
-
-    #     # Create the polygon category with the combined symbol
-    #     polygon_category = QgsRendererCategory(str(cluster_num), combined_polygon_symbol, str(cluster_num))
-
-    #     # Set colors for point symbols
-    #     color = QColor(to_hex(colormap(i)))
-    #     symbol_1_3.symbolLayer(0).setColor(color)
-    #     symbol_2.symbolLayer(0).setColor(color)
-    #     symbol_2.setSize(10)  # Set larger size for point 2
-    #     line_symbol.symbolLayer(0).setColor(color)
-
-    #     # Create categories for points, lines, and polygons
-    #     category_1_3 = QgsRendererCategory(str(cluster_num), symbol_1_3, str(cluster_num))
-    #     category_2 = QgsRendererCategory(str(cluster_num), symbol_2, str(cluster_num))
-    #     line_category = QgsRendererCategory(str(cluster_num), line_symbol, str(cluster_num))
-
-    #     # Append categories to the lists
-    #     categories_1_3.append(category_1_3)
-    #     categories_2.append(category_2)
-    #     line_categories.append(line_category)
-    #     polygon_categories.append(polygon_category)  # Add polygon category to the list
-
-    # # Apply the categorized renderers to the point, line, and polygon layers
-    # categorized_renderer_1_3 = QgsCategorizedSymbolRenderer('cluster', categories_1_3)
-    # point_layer_1_3.setRenderer(categorized_renderer_1_3)
-
-    # categorized_renderer_2 = QgsCategorizedSymbolRenderer('cluster', categories_2)
-    # point_layer_2.setRenderer(categorized_renderer_2)
-
-    # line_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', line_categories)
-    # line_layer.setRenderer(line_categorized_renderer)
-
-    # polygon_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', polygon_categories)
-    # polygon_layer.setRenderer(polygon_categorized_renderer)  # Apply to polygon layer
-
-
-    # Apply the categorized renderers to the point, line, and polygon layers
-    categorized_renderer_1_3 = QgsCategorizedSymbolRenderer('cluster', categories_1_3)
-    point_layer_1_3.setRenderer(categorized_renderer_1_3)
-
-    categorized_renderer_2 = QgsCategorizedSymbolRenderer('cluster', categories_2)
-    point_layer_2.setRenderer(categorized_renderer_2)
-
-    line_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', line_categories)
-    line_layer.setRenderer(line_categorized_renderer)
-
-    polygon_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', polygon_categories)
-    polygon_layer.setRenderer(polygon_categorized_renderer)  # Apply to polygon layer
-
-
     # Optionally save the layers as shapefiles
     if output_shapefile:
         point_output_1_3 = output_shapefile + '_spoof_start_end_points.shp'
@@ -317,3 +238,4 @@ def create_spoof_layers(events_df, events_clusters, layer_name, output_shapefile
         print(f'Successfully saved polygon layer to {polygon_output}')
     else:
         print('Layers added to QGIS project but not saved to disk.')
+

@@ -319,9 +319,13 @@ def get_min_max_dates(df, time_column='Time',input_format = '%Y-%m-%d %H:%M:%S',
         return None,None
     
     # Get the minimum and maximum dates
-    time_data = pd.to_datetime(df[time_column])
-    min_date = time_data.min().strftime(output_format)
-    max_date = time_data.max().strftime(output_format)
+    if pd.api.types.is_integer_dtype(df[time_column]) or pd.api.types.is_float_dtype(df[time_column]):
+        min_date = datenum2datetime(df[time_column].min())
+        max_date = datenum2datetime(df[time_column].max())        
+    else:
+        time_data = pd.to_datetime(df[time_column])
+        min_date = time_data.min().strftime(output_format)
+        max_date = time_data.max().strftime(output_format)
     
     return min_date, max_date
 
