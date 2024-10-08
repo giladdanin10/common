@@ -1,7 +1,7 @@
 from qgis.core import QgsProject
 from qgis.core import QgsRasterLayer
 
-def restart_project():
+def RestartProject():
     """
     Removes all layers from the current QGIS project except for the OpenStreetMap layer
     and adds or refreshes the street map layer.

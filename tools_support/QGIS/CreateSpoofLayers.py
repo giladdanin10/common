@@ -10,19 +10,20 @@ from matplotlib.colors import to_hex  # Convert RGB to hex
 from PyQt5.QtGui import QColor  # Import QColor for handling colors
 
 
-def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
+def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clusters=None):
     """
     Creates QGIS layers with 3 points from a CSV file and draws lines between them.
     The second point is placed in a separate layer and is twice as large.
     Lines are drawn between the first and second points, and between the second and third points.
     
-    Both point layers and the line layer are categorized by 'cluster', with point 2 being larger,
+    Both point layers and the line layer are categorized by 'cluster_num', with point 2 being larger,
     and the classification names (ship names) are maintained in the order they appear in the CSV file.
     
     Parameters:
     - csv_file: Path to the CSV file.
     - layer_name: Name of the QGIS layers.
     - output_shapefile: Path to save the layers as shapefiles (optional).
+    - highlight_clusters: List of cluster names to highlight (optional). If not None, only the specified clusters will be enabled, and the rest disabled.
     """
 
     # Remove existing layers with the same names
@@ -44,7 +45,7 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
 
     # Define fields for the point and line layers
     fields = [
-        QgsField('cluster', QVariant.String),
+        QgsField('cluster_num', QVariant.String),
         QgsField('start_time', QVariant.String),
         QgsField('end_time', QVariant.String),
         QgsField('type', QVariant.String),
@@ -52,7 +53,7 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
     ]
     provider_1_3.addAttributes(fields)
     provider_2.addAttributes(fields)
-    line_provider.addAttributes([QgsField('cluster', QVariant.String)])
+    line_provider.addAttributes([QgsField('cluster_num', QVariant.String)])
     point_layer_1_3.updateFields()
     point_layer_2.updateFields()
     line_layer.updateFields()
@@ -66,48 +67,48 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
         for row in reader:
             try:
                 # Collect unique ship names in the original order
-                cluster_num = row['cluster']
+                cluster_num = row['cluster_num']
                 if cluster_num not in cluster_num_set:
                     cluster_nums.append(cluster_num)
                     cluster_num_set.add(cluster_num)
 
-                # Point 1: start_latitude_pre, start_longitude_pre
-                start_latitude_pre = float(row['start_latitude_pre']) if row['start_latitude_pre'] else None
-                start_longitude_pre = float(row['start_longitude_pre']) if row['start_longitude_pre'] else None
+                # Point 1: start_lat_pre, start_lon_pre
+                start_lat_pre = float(row['start_lat_pre']) if row['start_lat_pre'] else None
+                start_lon_pre = float(row['start_lon_pre']) if row['start_lon_pre'] else None
                 
-                # Point 2: start_latitude, start_longitude (this will be in a separate layer)
-                start_latitude = float(row['start_latitude']) if row['start_latitude'] else None
-                start_longitude = float(row['start_longitude']) if row['start_longitude'] else None
+                # Point 2: start_lat, start_lon (this will be in a separate layer)
+                start_lat = float(row['start_lat']) if row['start_lat'] else None
+                start_lon = float(row['start_lon']) if row['start_lon'] else None
                 
-                # Point 3: end_latitude, end_longitude
-                end_latitude = float(row['end_latitude']) if row['end_latitude'] else None
-                end_longitude = float(row['end_longitude']) if row['end_longitude'] else None
+                # Point 3: end_lat, end_lon
+                end_lat = float(row['end_lat']) if row['end_lat'] else None
+                end_lon = float(row['end_lon']) if row['end_lon'] else None
                 
-                if not (start_latitude_pre and start_longitude_pre and start_latitude and start_longitude and end_latitude and end_longitude):
+                if not (start_lat_pre and start_lon_pre and start_lat and start_lon and end_lat and end_lon):
                     continue  # Skip rows with missing or invalid data
                 
                 # Create features for points 1 and 3
                 point1 = QgsFeature()
-                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude_pre, start_latitude_pre)))
+                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon_pre, start_lat_pre)))
                 point1.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
                 provider_1_3.addFeature(point1)
 
                 point3 = QgsFeature()
-                point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_longitude, end_latitude)))
+                point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_lon, end_lat)))
                 point3.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
                 provider_1_3.addFeature(point3)
 
                 # Create a feature for point 2
                 point2 = QgsFeature()
-                point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_longitude, start_latitude)))
+                point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon, start_lat)))
                 point2.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
                 provider_2.addFeature(point2)
 
                 # Create a line between Point 1 and Point 2
                 line1 = QgsFeature()
                 line1.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(start_longitude_pre, start_latitude_pre),
-                    QgsPointXY(start_longitude, start_latitude)
+                    QgsPointXY(start_lon_pre, start_lat_pre),
+                    QgsPointXY(start_lon, start_lat)
                 ]))
                 line1.setAttributes([cluster_num])
                 line_provider.addFeature(line1)
@@ -115,8 +116,8 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
                 # Create a line between Point 3 and Point 2
                 line2 = QgsFeature()
                 line2.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(end_longitude, end_latitude),
-                    QgsPointXY(start_longitude, start_latitude)
+                    QgsPointXY(end_lon, end_lat),
+                    QgsPointXY(start_lon, start_lat)
                 ]))
                 line2.setAttributes([cluster_num])
                 line_provider.addFeature(line2)
@@ -130,21 +131,15 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
     QgsProject.instance().addMapLayer(point_layer_2)
     QgsProject.instance().addMapLayer(line_layer)
 
-    # Create a color map that will be used for points and lines
-    color_map = {}
+    # Create a colormap from matplotlib
+    if len(cluster_nums) <= 10:
+        colormap = cm.get_cmap('Set1', len(cluster_nums))  # Use 'Set1' for highly distinguishable colors
+    else:
+        colormap = cm.get_cmap('tab20', len(cluster_nums))  # Use 'tab20' for a larger number of categories
 
-    # Generate color categories for ship names in the order they appear
     categories_1_3 = []
     categories_2 = []
     line_categories = []
-    
-    # Create a colormap from matplotlib
-    colormap = cm.get_cmap('tab20', len(cluster_nums))  # Using 'tab20' for distinct colors
-
-    # Create a color map that will be used for points and lines
-    color_map = {}
-
-
 
     for i, cluster_num in enumerate(cluster_nums):
         # Create symbols for points 1 and 3
@@ -154,47 +149,41 @@ def create_spoof_layer(csv_file, layer_name, output_shapefile=None,):
 
         color = QColor(to_hex(colormap(i)))  # Convert hex to QColor
 
-
         # Assign a consistent color for both point layers and lines based on ship name
-        # color = symbol_1_3.symbolLayer(0).color()
-        # color_map[cluster_num] = color
-
         symbol_1_3.symbolLayer(0).setColor(color)
         symbol_2.symbolLayer(0).setColor(color)
         symbol_2.setSize(10)  # Set larger size for point 2
         line_symbol.symbolLayer(0).setColor(color)
 
+        # print(type(cluster_num))
+        # if cluster_num=='0':
+        #     print('kuku')
+        #     print(cluster_num)
+        #     print(highlight_clusters)
+
+        # Enable only highlighted clusters if highlight_clusters is provided
+        if highlight_clusters is None or int(cluster_num) in highlight_clusters:
+            enabled = True
+        else:
+            enabled = False
+
         # Create categories for both layers
-        category_1_3 = QgsRendererCategory(cluster_num, symbol_1_3, cluster_num)
-        category_2 = QgsRendererCategory(cluster_num, symbol_2, cluster_num)
-        line_category = QgsRendererCategory(cluster_num, line_symbol, cluster_num)
+        category_1_3 = QgsRendererCategory(cluster_num, symbol_1_3, cluster_num, enabled)
+        category_2 = QgsRendererCategory(cluster_num, symbol_2, cluster_num, enabled)
+        line_category = QgsRendererCategory(cluster_num, line_symbol, cluster_num, enabled)
 
         categories_1_3.append(category_1_3)
         categories_2.append(category_2)
         line_categories.append(line_category)
 
     # Apply the categorized renderers to the point and line layers
-    categorized_renderer_1_3 = QgsCategorizedSymbolRenderer('cluster', categories_1_3)
+    categorized_renderer_1_3 = QgsCategorizedSymbolRenderer('cluster_num', categories_1_3)
     point_layer_1_3.setRenderer(categorized_renderer_1_3)
 
-    categorized_renderer_2 = QgsCategorizedSymbolRenderer('cluster', categories_2)
+    categorized_renderer_2 = QgsCategorizedSymbolRenderer('cluster_num', categories_2)
     point_layer_2.setRenderer(categorized_renderer_2)
 
-    line_categorized_renderer = QgsCategorizedSymbolRenderer('cluster', line_categories)
+    line_categorized_renderer = QgsCategorizedSymbolRenderer('cluster_num', line_categories)
     line_layer.setRenderer(line_categorized_renderer)
 
     # Optionally save the layers as shapefiles
-    if output_shapefile:
-        point_output_1_3 = output_shapefile + '_spoof_start_end_points.shp'
-        point_output_2 = output_shapefile + '_spoof_target.shp'
-        line_output = output_shapefile + '_lines.shp'
-
-        QgsVectorFileWriter.writeAsVectorFormat(point_layer_1_3, point_output_1_3, "UTF-8", point_layer_1_3.crs(), "ESRI Shapefile")
-        QgsVectorFileWriter.writeAsVectorFormat(point_layer_2, point_output_2, "UTF-8", point_layer_2.crs(), "ESRI Shapefile")
-        QgsVectorFileWriter.writeAsVectorFormat(line_layer, line_output, "UTF-8", line_layer.crs(), "ESRI Shapefile")
-
-        print(f'Successfully saved point layers to {point_output_1_3} and {point_output_2}')
-        print(f'Successfully saved line layer to {line_output}')
-    else:
-        print('Layers added to QGIS project but not saved to disk.')
-

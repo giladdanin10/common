@@ -34,10 +34,10 @@ def load_df_from_file(file_name):
     try:
         with open(file_name, 'rb') as file:
             var = pd.read_pickle(file)
-        return var,True
+        return var
     except Exception as e:
         print(f'could not load df from {file_name}. Error: {e}')
-        return None,False
+        return None
 
 
 import os
@@ -101,17 +101,18 @@ def save_var(var, file_name, var_name='var'):
 
 
 def load_var(file_name, var_name='var'):
-    status = True
     print(f'load {var_name} from {file_name}')
     try:
         with open(file_name, 'rb') as file:
             var = pickle.load(file)
-        return var,status
+        return var
     except Exception as e:
         print(f'could not load {var_name} from {file_name}. Error: {e}')
-        status = False
-        return None,status
+        return None
     
+
+
+
 
 def get_file_base_name(file_path):
     # Get the file name from the path
@@ -138,17 +139,10 @@ def save_var(var, file_name, var_name='var'):
         print(f'could not save {var_name} to {file_name}. Error: {e}')
         return False
 
-def load_var(file_name, var_name='var'):
-    status = True
-    print(f'load {var_name} from {file_name}')
-    try:
-        with open(file_name, 'rb') as file:
-            var = pickle.load(file)
-        return var, status
-    except Exception as e:
-        print(f'could not load {var_name} from {file_name}. Error: {e}')
-        status = False
-        return None, status
+
+
+
+
 
 def load_folder_files_to_df(**params):
 

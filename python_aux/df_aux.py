@@ -2,6 +2,7 @@
 import sys
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
+import copy
 
 algo_path = Path(r'C:\work\code\AIS-R-D\algo')
 sys.path.append(str(algo_path))
@@ -58,7 +59,7 @@ def merge_dataframes_on_index(df1, df2, how='left', mode='merge'):
     return merged_df
 
 
-def filter_df(df, filter_dic):
+def filter_df(df, filter_dic,to_copy=False):
     """
     Filters a DataFrame based on a dictionary of column filters.
 
@@ -74,13 +75,18 @@ def filter_df(df, filter_dic):
     pd.DataFrame: The filtered DataFrame or an empty DataFrame if any column does not exist.
     """
 
-    if (filter_dic==None) or (len(filter_dic.keys())==0):
+    if (filter_dic==None) or (len(filter_dic.keys())==0) or df is None or df.empty:
         return df
+
+    if (to_copy):
+        filtered_df = copy.deepcopy(df)  # Create a copy of the DataFrame to avoid modifying the original
+    else:
+        filtered_df = df
 
     for column, conditions in filter_dic.items():
 
-        if column not in df.columns:
-            print(f"Error: Column '{column}' does not exist in the DataFrame. Existing columns: {list(df.columns)}")
+        if column not in filtered_df.columns:
+            print(f"Error: Column '{column}' does not exist in the DataFrame. Existing columns: {list(filtered_df.columns)}")
             return pd.DataFrame()  # Return an empty DataFrame
 
         if not isinstance(conditions, list):
@@ -98,15 +104,15 @@ def filter_df(df, filter_dic):
                 if not isinstance(value, list):
                     value = [value]
                     
-                # df = df[df[column].isin(value)]
+                # filtered_df = filtered_df[filtered_df[column].isin(value)]
                 
-                # df[column] = pd.Categorical(df[column], categories=value, ordered=True)
+                # filtered_df[column] = pd.Categorical(filtered_df[column], categories=value, ordered=True)
 
                 # # Sort by column to enforce the order
-                # df = df.sort_values(column)
+                # filtered_df = filtered_df.sort_values(column)
 
                 # Step 1: Filter the DataFrame by the name list
-                filtered_df = df.loc[df[column].isin(value)].copy()  # Use .loc and .copy() to avoid the warning
+                filtered_df = filtered_df.loc[filtered_df[column].isin(value)].copy()  # Use .loc and .copy() to avoid the warning
 
                 # Step 2: Preserve the order of the name list using pd.Categorical
                 filtered_df[column] = pd.Categorical(filtered_df[column], categories=value, ordered=True)
@@ -117,29 +123,29 @@ def filter_df(df, filter_dic):
 
             elif operator == '!=':
                 if isinstance(value, list):
-                    filtered_df =  df[~df[column].isin(value)]
+                    filtered_df =  filtered_df[~filtered_df[column].isin(value)]
                 else:
-                    filtered_df =  df[df[column] != value]
+                    filtered_df =  filtered_df[filtered_df[column] != value]
             elif operator == '<':
-                filtered_df =  df[df[column] < value]
+                filtered_df =  filtered_df[filtered_df[column] < value]
             elif operator == '<=':
-                filtered_df =  df[df[column] <= value]
+                filtered_df =  filtered_df[filtered_df[column] <= value]
             elif operator == '>':
-                filtered_df =  df[df[column] > value]
+                filtered_df =  filtered_df[filtered_df[column] > value]
             elif operator == '>=':
-                filtered_df =  df[df[column] >= value]
+                filtered_df =  filtered_df[filtered_df[column] >= value]
             elif operator == 'between':
                 if isinstance(value, tuple) and len(value) == 2:
                     lower_bound, upper_bound = value
-                    filtered_df =  df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+                    filtered_df =  filtered_df[(filtered_df[column] >= lower_bound) & (filtered_df[column] <= upper_bound)]
                     if lower_bound > upper_bound:
                         print(f'Lower bound ({lower_bound}) is higher than upper bound ({upper_bound})')
                 else:
                     raise ValueError(f"Value for 'between' must be a tuple of two elements: {value}")
             elif operator == 'str_filter':
-                if df[column].dtype == 'object':  # Ensure it's a string column
-                    filtered_values = filter_strs(df[column].tolist(), value)
-                    filtered_df =  df[df[column].isin(filtered_values)]
+                if filtered_df[column].dtype == 'object':  # Ensure it's a string column
+                    filtered_values = filter_strs(filtered_df[column].tolist(), value)
+                    filtered_df =  filtered_df[filtered_df[column].isin(filtered_values)]
                 else:
                     raise ValueError(f"Column '{column}' is not of string type.")
             else:

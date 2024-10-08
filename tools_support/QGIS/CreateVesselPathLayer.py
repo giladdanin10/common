@@ -1,14 +1,6 @@
 import os
 
-def CreateVesselPathLayer(layer_name, data_file, classification_node=None):
-    """
-    Creates a QGIS delimited text layer from a data file, deletes any existing layers with the same name, 
-    and optionally classifies it based on a specified field, maintaining the order from the original file.
-    
-    :param layer_name: The name to assign to the new layer.
-    :param data_file: The path to the data file (e.g., CSV).
-    :param classification_node: The field by which the layer will be optionally classified. If None, no classification is applied.
-    """
+def CreateVesselPathLayer(layer_name, data_file, location_columns_dic={'lat': 'latitude', 'lon': 'longitude'}, classification_node=None):
     try:
         # Remove any existing layers with the same name
         existing_layers = QgsProject.instance().mapLayersByName(layer_name)
@@ -22,60 +14,49 @@ def CreateVesselPathLayer(layer_name, data_file, classification_node=None):
             print(f"Error: Data file '{data_file}' not found.")
             return
         
-        # Define the URI for the delimited text layer, assuming the data has latitude and longitude fields
-        uri = f"file:///{data_file}?delimiter=,&xField=longitude&yField=latitude"
+        # Get latitude and longitude column names from the dictionary
+        lat_col = location_columns_dic.get('lat', 'latitude')
+        lon_col = location_columns_dic.get('lon', 'longitude')
+
+        # Define the URI for the delimited text layer
+        uri = f"file:///{data_file}?delimiter=,&xField={lon_col}&yField={lat_col}"
 
         # Load the data file as a delimited text layer
         layer = QgsVectorLayer(uri, layer_name, "delimitedtext")
-        
         if not layer.isValid():
             print(f"Error: Failed to load layer from file '{data_file}'.")
             return
 
-        # Set CRS to WGS 84 (EPSG:4326) for latitude/longitude data
+        # Set CRS to WGS 84 (EPSG:4326)
         layer.setCrs(QgsCoordinateReferenceSystem('EPSG:4326'))
 
         # Add the layer to the QGIS project
         QgsProject.instance().addMapLayer(layer)
         print(f"Layer '{layer_name}' created from file '{data_file}'.")
 
-        # Optional classification step
+        # Optional classification
         if classification_node:
-            # Get the attribute list and check if the classification node exists
             if classification_node not in [field.name() for field in layer.fields()]:
                 print(f"Error: Classification field '{classification_node}' not found in the data.")
                 return
             
-            # Create a categorized renderer based on the classification node
             categories = []
-            seen_values = set()  # To avoid duplicates
+            seen_values = set()
 
-            # Iterate through features in the original order of the file
             for feature in layer.getFeatures():
                 value = feature[classification_node]
                 if value not in seen_values:
-                    symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+                    symbol = QgsMarkerSymbol.defaultSymbol(layer.geometryType())
                     category = QgsRendererCategory(value, symbol, str(value))
                     categories.append(category)
                     seen_values.add(value)
 
             renderer = QgsCategorizedSymbolRenderer(classification_node, categories)
-            
-            # Apply the renderer to the layer
             layer.setRenderer(renderer)
-            print(f"Layer '{layer_name}' classified by '{classification_node}' in original order.")
+            print(f"Layer '{layer_name}' classified by '{classification_node}'.")
 
-        # Zoom to the layer's extent to make it visible
-        if layer.extent().isEmpty():
-            print(f"Layer '{layer_name}' has no visible extent (no data found).")
-        else:
-            iface.mapCanvas().setExtent(layer.extent())
-            iface.mapCanvas().refresh()
-
-        # Refresh the map and legend
+        # Refresh the project (No iface interaction in standalone scripts)
         layer.triggerRepaint()
-        iface.mapCanvas().refreshAllLayers()
-        iface.layerTreeView().refreshLayerSymbology(layer.id())
-
+        
     except Exception as e:
         print(f"Error occurred: {e}")

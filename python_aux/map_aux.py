@@ -23,80 +23,137 @@ import numpy as np
 import pandas as pd
 
 
-def calculate_distance(p1, p2):
-    """
-    Calculate the great-circle distance and the approximate dx and dy (in km) between two points on the Earth.
+def calculate_distance(lat1, lon1, lat2, lon2, km=False):
+    # Convert inputs to arrays to handle both scalar and Series inputs
+    lat1 = np.radians(np.atleast_1d(lat1).astype(float))
+    lat2 = np.radians(np.atleast_1d(lat2).astype(float))
+    lon1 = np.radians(np.atleast_1d(lon1).astype(float))
+    lon2 = np.radians(np.atleast_1d(lon2).astype(float))
     
-    Parameters:
-    p1 (list or tuple): The [latitude, longitude] pair of the first point.
-    p2 (list or tuple): The [latitude, longitude] pair of the second point.
+    # Radius of the Earth in kilometers or miles
+    r = 6371 if km else 3958.756
+
+    # Haversine formula
+    a = np.sin((lat2 - lat1) / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2
+    distances = 2 * r * np.arcsin(np.sqrt(a))
     
-    Returns:
-    dict: A dictionary containing the great-circle distance (dr_km), dx_km, and dy_km.
-    """
-    # Earth's radius in kilometers
-    R = 6371.0
+    # Return scalar if inputs were scalars, otherwise return an array
+    return distances[0] if distances.size == 1 else distances
+
+
+# def calculate_distance(p1, p2,km=True):
+#     """
+#     Calculate the great-circle distance and the approximate dx and dy (in km) between two points on the Earth.
     
-    # Convert degrees to radians
-    lat1_rad, long1_rad = np.radians(p1)
-    lat2_rad, long2_rad = np.radians(p2)
+#     Parameters:
+#     p1 (list or tuple): The [latitude, longitude] pair of the first point.
+#     p2 (list or tuple): The [latitude, longitude] pair of the second point.
     
-    # Calculate differences in latitude and longitude (in radians)
-    dlat = lat2_rad - lat1_rad
-    dlon = long2_rad - long1_rad
+#     Returns:
+#     dict: A dictionary containing the great-circle distance (dr_km), dx_km, and dy_km.
+#     """
+#     # Earth's radius in kilometers
+#     if (km==True):
+#         R = 6371.0
+#     else:
+#         R = 3958.756 # miles
     
-    # Haversine formula to calculate great-circle distance (dr_km)
-    a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    dr_km = R * c
+#     # Convert degrees to radians
+#     lat1_rad, long1_rad = np.radians(p1)
+#     lat2_rad, long2_rad = np.radians(p2)
     
-    # Calculate dx_km (approximation for longitude distance)
-    dx_km = R * dlon * np.cos((lat1_rad + lat2_rad) / 2)
+#     # Calculate differences in latitude and longitude (in radians)
+#     dlat = lat2_rad - lat1_rad
+#     dlon = long2_rad - long1_rad
     
-    # Calculate dy_km (approximation for latitude distance)
-    dy_km = R * dlat
+#     # Haversine formula to calculate great-circle distance (dr)
+#     a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+#     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+#     dr = R * c
     
-    return dr_km
+#     # Calculate dx (approximation for longitude distance)
+#     dx = R * dlon * np.cos((lat1_rad + lat2_rad) / 2)
+    
+#     # Calculate dy (approximation for latitude distance)
+#     dy = R * dlat
+    
+#     return dr
 
+def LatLong2Dist(df, lat_col='latitude', long_col='longitude',km=True):
+    df['prev_lat'] = df['lat'].shift(1)
+    df['prev_lon'] = df['lon'].shift(1)
+    df['dr'] = calculate_distance(df['prev_lon'], df['prev_lat'], df['lon'], df['lat'],km=km)
 
+# # Earth's radius in kilometers
+    # if (km==True):
+    #     R = 6371.0
+    # else:
+    #     R = 3958.756 # miles
 
-def lat_long_to_km(df, lat_col='latitude', long_col='longitude'):
-    # Earth's radius in kilometers
-    R = 6371.0
+    # # Convert degrees to radians
+    # df['lat_rad'] = np.radians(df[lat_col])
+    # df['long_rad'] = np.radians(df[long_col])
 
-    # Convert degrees to radians
-    df['lat_rad'] = np.radians(df[lat_col])
-    df['long_rad'] = np.radians(df[long_col])
+    # # Calculate differences in latitude and longitude (in radians)
+    # df['dlat'] = df['lat_rad'].diff()
+    # df['dlon'] = df['long_rad'].diff()
 
-    # Calculate differences in latitude and longitude (in radians)
-    df['dlat'] = df['lat_rad'].diff()
-    df['dlon'] = df['long_rad'].diff()
+    # # Haversine formula to calculate dr (great-circle distance)
+    # a = np.sin(df['dlat'] / 2)**2 + np.cos(df['lat_rad']) * np.cos(df['lat_rad']) * np.sin(df['dlon'] / 2)**2
+    # c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+    # df['dr'] = R * c
 
-    # Haversine formula to calculate dr_km (great-circle distance)
-    a = np.sin(df['dlat'] / 2)**2 + np.cos(df['lat_rad']) * np.cos(df['lat_rad']) * np.sin(df['dlon'] / 2)**2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    df['dr_km'] = R * c
+    # # Calculate dx (approximation for longitude distance)
+    # df['dx'] = R * df['dlon'] * np.cos(df['lat_rad'])
 
-    # Calculate dx_km (approximation for longitude distance)
-    df['dx_km'] = R * df['dlon'] * np.cos(df['lat_rad'])
+    # # Calculate dy (approximation for latitude distance)
+    # df['dy'] = R * df['dlat']
 
-    # Calculate dy_km (approximation for latitude distance)
-    df['dy_km'] = R * df['dlat']
-
-    # Drop intermediate columns
-    df.drop(columns=['lat_rad', 'long_rad', 'dlat', 'dlon'], inplace=True)
+    # # Drop intermediate columns
+    # df.drop(columns=['lat_rad', 'long_rad', 'dlat', 'dlon'], inplace=True)
 
     return df
 
-# Example DataFrame usage
-data = {
-    'latitude': [52.2296756, 41.8919300, 50.850340, 48.856614],
-    'longitude': [21.0122287, 12.5113300, 4.351710, 2.352222]
-}
-df = pd.DataFrame(data)
+# def lat_long_to_km(df, lat_col='latitude', long_col='longitude'):
+#     # Earth's radius in kilometers
+#     R = 6371.0
 
-df_with_distances = lat_long_to_km(df)
-print(df_with_distances[['dx_km', 'dy_km', 'dr_km']])
+#     # Convert degrees to radians
+#     df['lat_rad'] = np.radians(df[lat_col])
+#     df['long_rad'] = np.radians(df[long_col])
+
+#     # Calculate differences in latitude and longitude (in radians)
+#     df['dlat'] = df['lat_rad'].diff()
+#     df['dlon'] = df['long_rad'].diff()
+
+#     # Haversine formula to calculate dr_km (great-circle distance)
+#     a = np.sin(df['dlat'] / 2)**2 + np.cos(df['lat_rad']) * np.cos(df['lat_rad']) * np.sin(df['dlon'] / 2)**2
+#     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+#     df['dr_km'] = R * c
+
+#     # Calculate dx_km (approximation for longitude distance)
+#     df['dx_km'] = R * df['dlon'] * np.cos(df['lat_rad'])
+
+#     # Calculate dy_km (approximation for latitude distance)
+#     df['dy_km'] = R * df['dlat']
+
+#     # Drop intermediate columns
+#     df.drop(columns=['lat_rad', 'long_rad', 'dlat', 'dlon'], inplace=True)
+
+#     return df
+
+
+
+
+# # Example DataFrame usage
+# data = {
+#     'latitude': [52.2296756, 41.8919300, 50.850340, 48.856614],
+#     'longitude': [21.0122287, 12.5113300, 4.351710, 2.352222]
+# }
+# df = pd.DataFrame(data)
+
+# df_with_distances = lat_long_to_km(df)
+# print(df_with_distances[['dx_km', 'dy_km', 'dr_km']])
 
 
 

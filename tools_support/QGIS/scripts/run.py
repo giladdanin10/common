@@ -47,3 +47,6 @@ data_file = f"C:\work\data\ships//{db_name_clean}/ships_data.csv"
 
 CreateVesselPathLayer(layer_name,data_file,classification_node='name')
 ChangeTimeZone(layer_name, time_zone='UTC', column_names='time')
+
+
+# prepare_layer_for_accuracy_analysis('kuku', source_file=data_file, filter_file=None)
