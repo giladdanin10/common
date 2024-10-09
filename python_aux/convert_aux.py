@@ -1,6 +1,6 @@
 
 import pandas as pd
-
+import numpy as np
 
 def convert_to_float(s):
     """
@@ -55,3 +55,25 @@ def convert_time_column(df: pd.DataFrame, time_column: str) -> pd.DataFrame:
     if df[time_column].dtype == 'O':  # 'O' stands for object
         df[time_column] = pd.to_datetime(df[time_column])
     return df
+
+
+def VarToList(var):
+    # If it's already a list, return as-is
+    if isinstance(var, list):
+        return var
+    # If it's a string, wrap it in a list
+    elif isinstance(var, str):
+        return [var]
+    # If it's a Pandas Series, convert to a list
+    elif isinstance(var, pd.Series):
+        return var.tolist()
+    # If it's a Pandas Index, convert to a list
+    elif isinstance(var, pd.Index):
+        return var.tolist()
+    # If it's a NumPy array, convert to a list
+    elif isinstance(var, np.ndarray):
+        return var.tolist()
+    # If it's anything else, wrap it in a list
+    else:
+        return [var]
+

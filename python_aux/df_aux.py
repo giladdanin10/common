@@ -3,6 +3,7 @@ import sys
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 import copy
+import convert_aux as converta
 
 algo_path = Path(r'C:\work\code\AIS-R-D\algo')
 sys.path.append(str(algo_path))
@@ -101,6 +102,7 @@ def filter_df(df, filter_dic,to_copy=False):
 
 
             if operator == '==':
+                value = CONVERT.VarToList(value)
                 if not isinstance(value, list):
                     value = [value]
                     
@@ -427,3 +429,39 @@ def remove_time_duplicates(df, time_col='time', name_col='name'):
 
 def get_df_time_limits(df,time_column='time'):
     print((datenum2datetime(df[time_column].min()),datenum2datetime(df[time_column].max())))
+
+
+
+def IndexToRowNum(df, index):
+    """
+    This function takes a DataFrame and a single index or list of indices, 
+    and returns the corresponding row number(s).
+    
+    Parameters:
+    - df: The pandas DataFrame.
+    - index: A single index value or a list of index values.
+    
+    Returns:
+    - A single row number (int) for a single index or a list of row numbers (list of int) for multiple indices.
+      Returns None if an index is not found and prints a message.
+    """
+    index = converta.VarToList(index)   
+    # If index is a list (multiple indices)
+    if isinstance(index, list):
+        row_nums = []
+        for idx in index:
+            if idx in df.index:
+                row_nums.append(df.index.get_loc(idx))
+            else:
+                row_nums.append(None)
+                print(f"Index {idx} not found in DataFrame.")
+        return row_nums
+    
+    # If it's a single index
+    else:
+        if index in df.index:
+            return df.index.get_loc(index)
+        else:
+            print(f"Index {index} not found in DataFrame.")
+            return None
+

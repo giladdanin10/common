@@ -292,6 +292,8 @@ def plot(*args, **params):
 
   
 
+# vessels.PlotVesselsData(df,vessel_names=ana_vessels,columns=[['lon','lat'],['Vr','ground_speed'],['altitude'],['time']],
+#                         sub_plots=True,x_data_type='index',mark_events=True,events_df=events_df_filt,len_limit=2)
 def plot_df_columns(
     df, 
     columns=None,  # Now a list of lists where each list of columns will be plotted on a dedicated axis
@@ -322,15 +324,17 @@ def plot_df_columns(
     marker_points_dic = params.get('marker_points_dic', None)
     x_data_type = params.get('x_data_type', 'index')
     time_column = params.get('time_column', 'time')
-    global_title = params.get('global_title', None)  # Add global title parameter
+    fig_name = params.get('fig_name', None)  # Add global title parameter
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
+    save_fig = params.get('save_fig', False)
+    out_dir = params.get('out_dir', './')
 
     # Determine x_data based on x_data_type
     if x_data_type == 'index':
         x_data = range(df.shape[0])
         xlabel = 'index'
     else:
-        x_data = datenum2datetime(df[time_column])
+        x_data = timea.datenum2datetime(df[time_column])
         xlabel = 'time'
 
     if sub_plots:
@@ -395,9 +399,9 @@ def plot_df_columns(
             )            
 
     # Add a global title for the entire figure (above axes titles)
-    if global_title:
+    if fig_name:
         fig.update_layout(
-            title_text=global_title,  # Add global title
+            title_text=fig_name,  # Add global title
             title_x=0.5,
             title_y=0.95,  # Position the title higher
             title_font_size=20  # Adjust font size
@@ -411,6 +415,12 @@ def plot_df_columns(
 
     # Automatically show the figure
     fig.show()
+
+
+    if save_fig:
+        if (not fig_name):
+            fig_name = 'fig'
+        fig.write_html(f'{out_dir}/{fig_name}.html')
 
     # return fig, axes
 

@@ -5,7 +5,7 @@ from qgis.core import QgsProject
 import pandas as pd
 # sys.path.append('..')  # Add the parent directory to sys.path
 
-from QGISDriver import QGIS
+#from QGISDriver import QGIS
 
 RestartProject()
 
@@ -21,4 +21,4 @@ with open(r"C:\work\tools\QGIS\data\ADSB\vessels_events_clusters.pkl", 'rb') as 
      events_clusters = pickle.load(file)
 
 # CreateSpoofLayersAndClusters(events_df, events_clusters, layer_name)
-CreateSpoofLayers(layer_name,events_file_name,highlight_clusters=[0,5])
+CreateSpoofLayers(layer_name,events_file_name,highlight_clusters=None)
