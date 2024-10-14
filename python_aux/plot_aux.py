@@ -7,11 +7,19 @@ from  parse_aux import *
 import numpy as np
 import numpy as np
 import matplotlib.pyplot as plt
+import time_aux as timea
 from itertools import cycle
 from df_aux import *    
 import seaborn as sns
+import df_aux as dfa
 import random
 import plotly.express as px
+import plotly.graph_objects as go
+import tempfile
+import webbrowser
+import os
+import subprocess
+
 
 
 
@@ -106,6 +114,31 @@ def plot(*args, **params):
         - title_font_size : int, default=18
             Font size for the plot title.
     """    
+    # Extract other parameters
+    subplot_index = params.get('subplot_index', 0)
+    fig = params.get('fig', None)
+    axes = params.get('axes', None)
+    num_axes = params.get('num_axes', 1)
+    max_axes_in_row = params.get('max_axes_in_row', 4)
+    line_color = params.get('line_color', 'blue')
+    show_markers = params.get('show_markers', True)
+    line_name = params.get('line_name', None)
+    marker_points_dic = params.get('marker_points_dic', None)
+    line_width = params.get('line_width', 2)
+    line_dash = params.get('line_dash', 'solid')
+    axes_title = params.get('axes_title', None)
+    xlim = params.get('xlim', None)
+    ylim = params.get('ylim', None)
+    xlabel = params.get('xlabel', None)
+    ylabel = params.get('ylabel', None)
+    sync_xaxes = params.get('sync_xaxes', True)
+    sync_yaxes = params.get('sync_yaxes', False)
+    tick_labelsize = params.get('tick_labelsize', 10)
+    title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
+    x_data_type = params.get('x_data_type','index')
+    mode = params.get('mode', 'lines+markers')
+
+
     # Extract x_data and y_data from args or params
     if len(args) == 2:
         x_data, y_data = args
@@ -128,43 +161,18 @@ def plot(*args, **params):
         y_data = [y_data]  # Convert single y_data to list of lists for consistency
 
     # Use index for x_data if not provided
-    if x_data is None:
-        x_data = np.arange(len(y_data[0]))  # Use index if x_data is not provided
-        time_data = False
+
+# used for formatting x_axes
+    if x_data_type == 'time':
+        time_data = True
     else:
-        time_data = pd.api.types.is_datetime64_any_dtype(x_data)
-        x_data = np.asarray(x_data)
+        if x_data is None:
+            x_data = np.arange(len(y_data[0]))  # Use index if x_data is not provided
+            time_data = False
+        else:
+            time_data = pd.api.types.is_datetime64_any_dtype(x_data)
+            x_data = np.asarray(x_data)
 
-    if time_data:
-        # x_ticks = np.datetime_as_string(x_data, unit='D')
-        # # x_ticks = x_data.dt.strftime('%Y-%m-%d %H:%M')
-
-# this remark should be removed when dealing with marker points        
-        # x_data = datetime2datenum(x_data)
-        pass
-
-    # Extract other parameters
-    subplot_index = params.get('subplot_index', 0)
-    fig = params.get('fig', None)
-    axes = params.get('axes', None)
-    num_axes = params.get('num_axes', 1)
-    max_axes_in_row = params.get('max_axes_in_row', 4)
-    line_color = params.get('line_color', 'blue')
-    show_markers = params.get('show_markers', True)
-    line_name = params.get('line_name', None)
-    marker_points_dic = params.get('marker_points_dic', None)
-    line_width = params.get('line_width', 2)
-    line_dash = params.get('line_dash', 'solid')
-    axes_title = params.get('axes_title', None)
-    xlim = params.get('xlim', None)
-    ylim = params.get('ylim', None)
-    xlabel = params.get('xlabel', None)
-    ylabel = params.get('ylabel', None)
-    sync_xaxes = params.get('sync_xaxes', True)
-    sync_yaxes = params.get('sync_yaxes', False)
-    tick_labelsize = params.get('tick_labelsize', 10)
-    title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
-    mode = params.get('mode', 'lines+markers')
 
     # Handle figure creation
     if fig is None or axes is None:
@@ -182,6 +190,11 @@ def plot(*args, **params):
         fig_show = True
     else:
         fig_show = False
+
+    x_data_num = x_data
+    if (x_data_type == 'time'):
+        x_data = timea.datenum2datetime(x_data) 
+        
 
     # Plot each line
     for i, y in enumerate(y_data):
@@ -209,12 +222,16 @@ def plot(*args, **params):
       # Initialize a set to keep track of which names have already been added to the legend
         added_names = set()
 
+
+
         if marker_points_dic:
             if not isinstance(marker_points_dic, list):
                 marker_points_dic = [marker_points_dic]
 
             for marker_points_dic_part in marker_points_dic:
                 locs = marker_points_dic_part.get('loc', [])
+
+                      
                 marker_colors = marker_points_dic_part.get('color', current_line_color)  # Use line color if not explicitly set
                 symbols = marker_points_dic_part.get('symbol', 'circle')
                 marker_name = marker_points_dic_part.get('name', None)  # Get the name for the legend, None if not configured
@@ -225,10 +242,6 @@ def plot(*args, **params):
                     symbols = [symbols] * len(locs)
 
                 for j, loc in enumerate(locs):
-                    if time_data:
-                        x_data_num = datetime2datenum(x_data)
-                    else:
-                        x_data_num = x_data
                     if loc in x_data_num:
                         idx = np.argmin(np.abs(x_data_num - loc))  # Find closest index in x_data
 
@@ -265,7 +278,7 @@ def plot(*args, **params):
         #     tickangle=45,
         #     tickfont=dict(size=tick_labelsize)
         # )        
-        fig.update_xaxes(tickangle=0, tickfont=dict(size=tick_labelsize))
+        fig.update_xaxes(tickangle=45, tickfont=dict(size=tick_labelsize))
     else:
         fig.update_xaxes(tickangle=0, tickfont=dict(size=tick_labelsize))
 
@@ -292,7 +305,7 @@ def plot(*args, **params):
 
   
 
-# vessels.PlotVesselsData(df,vessel_names=ana_vessels,columns=[['lon','lat'],['Vr','ground_speed'],['altitude'],['time']],
+# vessels.PlotVesselsData(df,vessel_names=ana5_vessels,columns=[['lon','lat'],['Vr','ground_speed'],['altitude'],['time']],
 #                         sub_plots=True,x_data_type='index',mark_events=True,events_df=events_df_filt,len_limit=2)
 def plot_df_columns(
     df, 
@@ -328,13 +341,17 @@ def plot_df_columns(
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
     save_fig = params.get('save_fig', False)
     out_dir = params.get('out_dir', './')
+    show_in_chrome = params.get('show_in_chrome', True)
+    new_window = params.get('new_window', True) 
+    fig_name_str = params.get('fig_name_str','')
 
     # Determine x_data based on x_data_type
     if x_data_type == 'index':
         x_data = range(df.shape[0])
         xlabel = 'index'
     else:
-        x_data = timea.datenum2datetime(df[time_column])
+        # x_data = timea.datenum2datetime(df[time_column])
+        x_data = df[time_column]
         xlabel = 'time'
 
     if sub_plots:
@@ -344,6 +361,9 @@ def plot_df_columns(
     # Check if columns is a list of lists, if not, convert it to list of lists
     if not isinstance(columns[0], list):
         columns = [columns]  # Treat single list as one group for one axis
+
+
+    dfa.CheckColumnsInDF(df, columns)  # Check if all columns exist in the DataFrame
 
     num_axes = len(columns)  # Each list in columns will be plotted on one axis
 
@@ -392,6 +412,7 @@ def plot_df_columns(
                 y_data=[df[col_name].tolist()],
                 subplot_index=i if params.get('sub_plots', False) else 0,
                 fig=fig,
+                xlabel=xlabel,
                 axes=axes,
                 num_axes=num_axes,
                 line_name=col_name,
@@ -414,13 +435,19 @@ def plot_df_columns(
     fig.update_layout(showlegend=True)
 
     # Automatically show the figure
-    fig.show()
 
 
-    if save_fig:
-        if (not fig_name):
-            fig_name = 'fig'
-        fig.write_html(f'{out_dir}/{fig_name}.html')
+    if (not fig_name):
+        fig_name = 'fig'
+
+
+    if (show_in_chrome):
+        OpenFigureInChrome(fig, fig_name=fig_name+fig_name_str,new_window=new_window)
+    else:
+        fig.show()  
+
+    # if save_fig:        
+    #     fig.write_html(f'{out_dir}/{fig_name}.html')
 
     # return fig, axes
 
@@ -713,3 +740,76 @@ class Cursor:
         self.fig.canvas.draw()
 
 
+
+
+
+chrome_pids = []
+
+def OpenFigureInChrome(fig, fig_name="Plotly Figure", new_window=False, window_size=(1200, 800)):
+    """
+    Opens a Plotly figure in a Google Chrome window. If 'new_window' is True,
+    opens in a new Chrome window. Otherwise, it opens in the current browser tab.
+
+    Parameters:
+    - fig: Plotly figure object to display.
+    - fig_name: Custom name for the browser tab (default is 'Plotly Figure').
+    - new_window: If True, opens the figure in a new Chrome window. Default is False.
+    - window_size: Tuple specifying the window size (width, height). Default is (1200, 800).
+    """
+    global chrome_pids
+
+    # Generate the HTML content with the custom <title> tag
+    html_content = f"""
+    <html>
+    <head>
+        <title>{fig_name}</title>  <!-- Custom Tab Name -->
+    </head>
+    <body>
+        {fig.to_html(full_html=False, include_plotlyjs='cdn')}  <!-- Embed the Plotly figure -->
+    </body>
+    </html>
+    """
+
+    # Save the HTML content to a temporary file
+    temp_file = tempfile.NamedTemporaryFile(suffix=".html", delete=False, mode="w", encoding="utf-8")
+    temp_file.write(html_content)
+    temp_file.close()
+
+    # Construct the path to the temporary HTML file
+    file_url = f"file://{os.path.realpath(temp_file.name)}"
+
+    chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Adjust for your OS
+
+    try:
+        if new_window:
+            # Open a new Chrome window and capture the process
+            proc = subprocess.Popen([
+                chrome_path, 
+                "--new-window", 
+                f"--window-size={window_size[0]},{window_size[1]}", 
+                file_url
+            ])
+            # Store the process ID (PID)
+            chrome_pids.append(proc.pid)
+        else:
+            # Open in the default browser (fallback to default browser tab)
+            webbrowser.open(file_url)
+    except FileNotFoundError:
+        print("Chrome not found. Opening in the default browser tab instead.")
+        webbrowser.open(file_url)
+
+
+def CloseChromeWindows():
+    """Closes only the Chrome windows that were opened by this script."""
+    global chrome_pids
+
+    for pid in chrome_pids:
+        try:
+            # Terminate the specific Chrome process
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=True)
+            print(f"Closed Chrome window with PID: {pid}")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to close Chrome window with PID {pid}: {e}")
+
+    # Clear the stored PIDs after closing
+    chrome_pids.clear()

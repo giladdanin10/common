@@ -150,3 +150,35 @@ def print_list_as_column(lst):
         print(item)
 
 
+def FlattenAList(nested_list):
+    """
+    This function takes a list of lists and flattens it into a single list.
+    
+    Parameters:
+    - nested_list: A list of lists (or other iterables).
+    
+    Returns:
+    - A single flattened list containing all elements from the sub-lists.
+    """
+    # Use a list comprehension to flatten the nested list
+    return [item for sublist in nested_list for item in sublist]
+
+
+def GetUniqueListMembers(input_list, preserve_order=True):
+    """
+    Returns a list of unique elements from the input list.
+
+    Parameters:
+    - input_list: List of elements (can contain duplicates).
+    - preserve_order: If True, preserves the order of elements. Default is True.
+
+    Returns:
+    - List of unique elements.
+    """
+    if preserve_order:
+        # Use OrderedDict to preserve the order and remove duplicates
+        from collections import OrderedDict
+        return list(OrderedDict.fromkeys(input_list))
+    else:
+        # Use a set to remove duplicates (order not guaranteed)
+        return list(set(input_list))

@@ -26,6 +26,7 @@ import convert_aux as CONVERT
 from time_aux import *
 from parse_aux import *
 from str_aux import *
+import list_aux as lista        
 
 
 def merge_dataframes_on_index(df1, df2, how='left', mode='merge'):
@@ -242,8 +243,8 @@ def reorder_df_columns(df, order):
     return df[new_order]
 
 
-def check_columns_in_df(df, columns):
-    parse_parameter(columns,df.columns,'column')    
+def CheckColumnsInDF(df, columns):
+    parse_parameter(lista.FlattenAList(columns),df.columns,'column')    
 
 def handle_common_time_rows_in_df(df, time_column='time', ID_columns=[]):
 
@@ -432,6 +433,40 @@ def get_df_time_limits(df,time_column='time'):
 
 
 
+def GetRowNumbersFromIndexList(df, index):
+    """
+    This function takes a DataFrame and a single index or list of indices, 
+    and returns the corresponding row number(s).
+    
+    Parameters:
+    - df: The pandas DataFrame.
+    - index: A single index value or a list of index values.
+    
+    Returns:
+    - A single row number (int) for a single index or a list of row numbers (list of int) for multiple indices.
+      Returns None if an index is not found and prints a message.
+    """
+    index = converta.VarToList(index)   
+    # If index is a list (multiple indices)
+    if isinstance(index, list):
+        row_nums = []
+        for idx in index:
+            if idx in df.index:
+                row_nums.append(df.index.get_loc(idx))
+            else:
+                row_nums.append(None)
+                print(f"Index {idx} not found in DataFrame.")
+        return row_nums
+    
+    # If it's a single index
+    else:
+        if index in df.index:
+            return df.index.get_loc(index)
+        else:
+            print(f"Index {index} not found in DataFrame.")
+            return None
+
+# to be removed, but check in Spoof
 def IndexToRowNum(df, index):
     """
     This function takes a DataFrame and a single index or list of indices, 
@@ -464,4 +499,46 @@ def IndexToRowNum(df, index):
         else:
             print(f"Index {index} not found in DataFrame.")
             return None
+
+
+import pandas as pd
+
+def CompareDfs(df1, df2, to_print=True):
+    """
+    Compares two DataFrames based on their indexes and returns the indexes of rows
+    that are unique to each DataFrame. Optionally prints the unique indexes or 
+    a message if the DataFrames are equal.
+
+    Parameters:
+        df1 (pd.DataFrame): The first DataFrame.
+        df2 (pd.DataFrame): The second DataFrame.
+        to_print (bool): If True, prints the unique indexes or equality message.
+
+    Returns:
+        dict: A dictionary with two lists:
+              'only_in_df1' - List of index values in df1 but not in df2.
+              'only_in_df2' - List of index values in df2 but not in df1.
+    """
+    # Find unique indexes in df1 and df2
+    index_only_in_df1 = df1.index.difference(df2.index).tolist()
+    index_only_in_df2 = df2.index.difference(df1.index).tolist()
+
+    # Print based on conditions
+    if to_print:
+        if not index_only_in_df1 and not index_only_in_df2:
+            print("DataFrames are equal.")
+        else:
+            if index_only_in_df1:
+                print("Indexes only in df1:")
+                for idx in index_only_in_df1:
+                    print(idx)
+            if index_only_in_df2:
+                print("\nIndexes only in df2:")
+                for idx in index_only_in_df2:
+                    print(idx)
+
+    return {
+        'only_in_df1': index_only_in_df1,
+        'only_in_df2': index_only_in_df2
+    }
 

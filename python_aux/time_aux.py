@@ -181,6 +181,8 @@ def datenum2datetime(time_num, time_zone=None):
             return pd.to_datetime(x, unit='s')  # Treat float as seconds since epoch
         elif isinstance(x, str):
             return pd.to_datetime(x)
+        elif isinstance(x, pd.Series):
+            return pd.to_datetime(x)        
         elif isinstance(x, pd.Timestamp):
             return x
         else:
@@ -225,7 +227,7 @@ def datenum2datetime(time_num, time_zone=None):
         return apply_timezone(pd.Series([dt]), time_zone).iloc[0]
     
     elif isinstance(time_num, np.ndarray):
-        if np.issubdtype(time_num.dtype, np.int_):
+        if np.issubdtype(time_num.dtype, np.integer) or np.issubdtype(time_num.dtype, np.floating):
             dt_series = pd.to_datetime(time_num, unit='s')
         elif np.issubdtype(time_num.dtype, np.str_):
             dt_series = pd.to_datetime(time_num)
@@ -378,3 +380,106 @@ def get_time_scale(start_time, end_time, diff_unit):
         current_time += time_delta
 
     return time_scale
+
+
+import pandas as pd
+import numpy as np
+from datetime import datetime
+
+def MatchTimeFormat(var1, var2, adjust_lengths=False):
+    """
+    Converts var2 to match the format of var1 (ISO 8601 format with 'T').
+    
+    Parameters:
+    - var1: A string, list, NumPy array, or Pandas Series in ISO 8601 format.
+    - var2: A string, list, NumPy array, Pandas Series, or Timestamp in a different datetime format.
+    - adjust_lengths: Boolean to indicate whether to adjust lengths (default=False).
+    
+    Returns:
+    - var2 converted to match var1's format.
+    
+    Raises:
+    - ValueError if var1 or var2 is not in a valid datetime format.
+    - ValueError if var1 and var2 have different lengths when passed as lists or Series and `adjust_lengths=False`.
+    """
+    
+    # Helper function to handle individual string conversion
+    def convert_single(var1_str, var2_str):
+        # Convert var1_str to a datetime object (ISO 8601)
+        try:
+            var1_datetime = datetime.fromisoformat(var1_str.replace('Z', ''))
+        except ValueError:
+            raise ValueError(f"var1 value '{var1_str}' is not a valid ISO 8601 datetime format.")
+        
+        # Convert var2_str or Timestamp to a datetime object
+        if isinstance(var2_str, pd.Timestamp):
+            var2_datetime = var2_str
+        else:
+            var2_truncated = var2_str[:26]  # Truncate var2 to 6-digit microseconds
+            try:
+                var2_datetime = datetime.strptime(var2_truncated, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                raise ValueError(f"var2 value '{var2_str}' is not in a valid datetime format.")
+        
+        # Preserve the full precision for microseconds if var2_str is a string and longer than 6 digits
+        extra_digits = ''
+        if isinstance(var2_str, str) and len(var2_str) > 26:
+            extra_digits = var2_str[26:]  # Keep the extra digits
+        
+        # Format var2_str to match var1's format (ISO 8601 with 'T')
+        var2_formatted = var2_datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + extra_digits
+        
+        return var2_formatted
+
+    # Handle NumPy arrays by converting them to lists
+    if isinstance(var1, np.ndarray):
+        var1 = var1.tolist()
+    if isinstance(var2, np.ndarray):
+        var2 = var2.tolist()
+    
+    # If var2 is a single Timestamp and var1 is iterable (list, np.array, or pd.Series)
+    if isinstance(var2, pd.Timestamp) and isinstance(var1, (list, pd.Series, np.ndarray)):
+        var2 = [var2] * len(var1)
+
+    # If var1 is a single Timestamp and var2 is iterable
+    if isinstance(var1, pd.Timestamp) and isinstance(var2, (list, pd.Series, np.ndarray)):
+        var1 = [var1] * len(var2)
+
+    # If inputs are lists or Pandas Series
+    if isinstance(var1, (list, pd.Series)) and isinstance(var2, (list, pd.Series)):
+        # If adjust_lengths is True, adjust lengths of var1 and var2
+        if adjust_lengths:
+            max_len = max(len(var1), len(var2))
+            var1 = var1 + [None] * (max_len - len(var1)) if len(var1) < max_len else var1[:max_len]
+            var2 = var2 + [None] * (max_len - len(var2)) if len(var2) < max_len else var2[:max_len]
+        else:
+            # Ensure both inputs have the same length
+            if len(var1) != len(var2):
+                raise ValueError(f"var1 and var2 must have the same length. Got lengths {len(var1)} and {len(var2)}.")
+        
+        # Convert each pair of var1 and var2 elements
+        return [convert_single(v1, v2) if v1 and v2 else None for v1, v2 in zip(var1, var2)]
+    
+    # If inputs are single strings or Timestamps
+    elif isinstance(var1, str) and isinstance(var2, (str, pd.Timestamp)):
+        return convert_single(var1, var2)
+    
+    else:
+        raise ValueError("var1 and var2 must be both strings, lists, NumPy arrays, or Pandas Series.")
+
+# # Example usage:
+
+# # For single string and Pandas Timestamp inputs
+# var1_single = "2024-04-01T08:50:59.926000118"
+# var2_single_timestamp = pd.Timestamp("2024-04-01 08:31:59.926000118")
+# print("Single Input (Timestamp):", MatchTimeFormat(var1_single, var2_single_timestamp))
+
+# # For NumPy array and list inputs
+# var1_array = np.array(["2024-04-01T08:50:59.926000118", "2024-04-01T08:50:59.926000118"])
+# var2_list = ["2024-04-01 08:31:59.926000118", "2024-04-01 08:32:59.926000118"]
+# print("NumPy Array and List Input:", MatchTimeFormat(var1_array, var2_list))
+
+# # For Pandas Series and single Pandas Timestamp
+# var1_series = pd.Series(["2024-04-01T08:50:59.926000118", "2024-04-01T08:50:59.926000118"])
+# var2_single_timestamp = pd.Timestamp("2024-04-01 08:31:59.926000118")
+# print("Series and Single Timestamp Input:", MatchTimeFormat(var1_series, var2_single_timestamp))

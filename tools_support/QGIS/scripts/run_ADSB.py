@@ -11,6 +11,8 @@ RestartProject()
 
 layer_name = 'flights'
 data_file = r"C:\work\tools\QGIS\data\ADSB\vessels_data.csv"
+run_name = 'base'
+
 
 CreateVesselPathLayer(layer_name,data_file,classification_node='name',location_columns_dic={'lat': 'lat', 'lon': 'lon'})    
 
@@ -21,4 +23,4 @@ with open(r"C:\work\tools\QGIS\data\ADSB\vessels_events_clusters.pkl", 'rb') as 
      events_clusters = pickle.load(file)
 
 # CreateSpoofLayersAndClusters(events_df, events_clusters, layer_name)
-CreateSpoofLayers(layer_name,events_file_name,highlight_clusters=None)
+CreateSpoofLayers(f'spoof_{run_name}',rf"C:\work\tools\QGIS\data\ADSB\vessels_events_{run_name}.csv",highlight_clusters=None)

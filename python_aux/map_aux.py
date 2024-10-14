@@ -82,7 +82,7 @@ def calculate_distance(lat1, lon1, lat2, lon2, km=False):
 def LatLong2Dist(df, lat_col='latitude', long_col='longitude',km=True):
     df['prev_lat'] = df['lat'].shift(1)
     df['prev_lon'] = df['lon'].shift(1)
-    df['dr'] = calculate_distance(df['prev_lon'], df['prev_lat'], df['lon'], df['lat'],km=km)
+    df['dr'] = calculate_distance(df['prev_lat'], df['prev_lon'], df['lat'], df['lon'],km=km)
 
 # # Earth's radius in kilometers
     # if (km==True):

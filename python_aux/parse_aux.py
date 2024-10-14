@@ -1,6 +1,6 @@
 import traceback
 import inspect
-
+import convert_aux as converta
 def func1(**params):
     # Define default and optional values for each parameter in default_params
     default_params = {
@@ -58,6 +58,7 @@ def parse_parameter(parameter, allowed_values,parameter_name=None):
         str = ""
     
     if (isinstance(parameter,list)):
+        allowed_values = converta.VarToList(allowed_values)
         for value in parameter:
             if value not in allowed_values:
                 raise ValueError(f"Invalid value '{value}' {str}. Allowed values are: {allowed_values}")
