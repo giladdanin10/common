@@ -193,7 +193,7 @@ def plot(*args, **params):
 
     x_data_num = x_data
     if (x_data_type == 'time'):
-        x_data = timea.datenum2datetime(x_data) 
+        x_data = timea.datenum2datetime(x_data).to_list()
         
 
     # Plot each line
@@ -242,22 +242,23 @@ def plot(*args, **params):
                     symbols = [symbols] * len(locs)
 
                 for j, loc in enumerate(locs):
-                    if loc in x_data_num:
-                        idx = np.argmin(np.abs(x_data_num - loc))  # Find closest index in x_data
+                    # if loc in x_data_num:
+                    # idx = np.argmin(np.abs(x_data_num - loc))  # Find closest index in x_data
+                    idx = loc
+                    # Add the marker as a separate trace
+                    show_legend = marker_name is not None and marker_name not in added_names
+                    if show_legend:
+                        added_names.add(marker_name)  # Mark this name as added to the legend
 
-                        # Add the marker as a separate trace
-                        show_legend = marker_name is not None and marker_name not in added_names
-                        if show_legend:
-                            added_names.add(marker_name)  # Mark this name as added to the legend
-
-                        fig.add_trace(go.Scatter(
-                            x=[x_data[idx]],
-                            y=[y[idx]],
-                            mode='markers',
-                            marker=dict(symbol=symbols[j], size=10, color=marker_colors[j]),
-                            name=marker_name if show_legend else None,  # Add the name to show in the legend only if not added yet
-                            showlegend=show_legend  # Show legend only once for this name
-                        ), row=axes[subplot_index][0], col=axes[subplot_index][1])
+                    
+                    fig.add_trace(go.Scatter(
+                        x=[x_data[idx]],
+                        y=[y[idx]],
+                        mode='markers',
+                        marker=dict(symbol=symbols[j], size=10, color=marker_colors[j]),
+                        name=marker_name if show_legend else None,  # Add the name to show in the legend only if not added yet
+                        showlegend=show_legend  # Show legend only once for this name
+                    ), row=axes[subplot_index][0], col=axes[subplot_index][1])
 
     # Update axes ranges, labels, etc.
     if xlim:
