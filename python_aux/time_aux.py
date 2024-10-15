@@ -1,6 +1,7 @@
 import pandas as pd
 import time
 from datetime import datetime, timedelta
+from pandas._libs.tslibs.timestamps import Timestamp
 
 
 def filter_df_by_date(df, min_date, max_date, time_column='Time', date_format='%Y-%m-%d %H:%M:%S'):
@@ -177,29 +178,27 @@ def datenum2datetime(time_num, time_zone=None):
     """
     def convert_to_datetime(x):
         """Convert a single value to datetime."""
-        if isinstance(x, (int, np.int64, float, np.float32, np.float64)):
-            return pd.to_datetime(x, unit='s')  # Treat float as seconds since epoch
+        if isinstance(x, (pd.Timestamp, Timestamp, pd.DatetimeIndex)):  # Already a datetime object
+            return x
+        elif isinstance(x, (int, np.int64, float, np.float32, np.float64)):
+            return pd.to_datetime(x, unit='s')  # Treat as seconds since epoch
         elif isinstance(x, str):
             return pd.to_datetime(x)
         elif isinstance(x, pd.Series):
-            return pd.to_datetime(x)        
-        elif isinstance(x, pd.Timestamp):
-            return x
+            return pd.to_datetime(x)
         else:
-            raise ValueError("Unsupported data type")
-        
+            raise ValueError(f"Unsupported data type: {type(x)}")
 
-    # Function to apply timezone
     def apply_timezone(dt_series, time_zone):
+        """Apply timezone to datetime series."""
         if time_zone:
             tz = pytz.timezone(time_zone)
             return dt_series.dt.tz_localize('UTC').dt.tz_convert(tz)
         return dt_series
 
+    # Handle Pandas Series
     if isinstance(time_num, pd.Series):
-        if pd.api.types.is_integer_dtype(time_num):
-            dt_series = pd.to_datetime(time_num, unit='s')
-        elif pd.api.types.is_float_dtype(time_num):
+        if pd.api.types.is_integer_dtype(time_num) or pd.api.types.is_float_dtype(time_num):
             dt_series = pd.to_datetime(time_num, unit='s')
         elif pd.api.types.is_datetime64_any_dtype(time_num):
             dt_series = time_num
@@ -209,10 +208,12 @@ def datenum2datetime(time_num, time_zone=None):
             raise ValueError("Unsupported data type in Series")
         return apply_timezone(dt_series, time_zone)
 
+    # Handle individual numeric values
     elif isinstance(time_num, (int, np.int64, float, np.float32, np.float64)):
         dt = pd.to_datetime(time_num, unit='s')
         return apply_timezone(pd.Series([dt]), time_zone).iloc[0]
-    
+
+    # Handle lists
     elif isinstance(time_num, list):
         if all(isinstance(x, int) for x in time_num):
             dt_series = pd.to_datetime(time_num, unit='s')
@@ -221,11 +222,13 @@ def datenum2datetime(time_num, time_zone=None):
         else:
             raise ValueError("Unsupported data type in list")
         return apply_timezone(dt_series, time_zone)
-    
+
+    # Handle string inputs
     elif isinstance(time_num, str):
         dt = pd.to_datetime(time_num)
         return apply_timezone(pd.Series([dt]), time_zone).iloc[0]
-    
+
+    # Handle NumPy arrays
     elif isinstance(time_num, np.ndarray):
         if np.issubdtype(time_num.dtype, np.integer) or np.issubdtype(time_num.dtype, np.floating):
             dt_series = pd.to_datetime(time_num, unit='s')
@@ -239,10 +242,13 @@ def datenum2datetime(time_num, time_zone=None):
         else:
             raise ValueError("Unsupported NumPy array data type")
         return apply_timezone(dt_series, time_zone)
-    
-    else:
-        raise ValueError("Unsupported input type")
 
+    # Handle already a datetime or Timestamp object
+    elif isinstance(time_num, (pd.Timestamp, Timestamp)):
+        return time_num
+
+    else:
+        raise ValueError(f"Unsupported input type: {type(time_num)}")
 
 # Example usage:
 # Single integer
