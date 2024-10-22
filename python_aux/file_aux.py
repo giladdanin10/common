@@ -265,3 +265,67 @@ def add_directories_to_sys_path(top_directory: Path):
     for directory in top_directory.rglob('*'):
         if directory.is_dir():
             sys.path.append(str(directory))
+
+
+
+import os
+import sys
+def AddToSysPath(file_path):
+    """
+    Add the directory of the given relative or absolute file path to sys.path for module importing.
+
+    Args:
+        file_path (str): The relative or absolute path of the directory or file.
+    """
+    # Convert the relative path to an absolute path
+    abs_path = os.path.abspath(file_path)
+    
+    # Check if the absolute directory path is already in sys.path
+    if abs_path not in sys.path:
+        sys.path.append(abs_path)
+        print(f"Directory '{abs_path}' added to sys.path.")
+    else:
+        print(f"Directory '{abs_path}' is already in sys.path.")
+
+
+import os
+
+def FindRelativePath(file1, file2, format='explorer'):
+    """
+    Finds the relative path from file1 to file2 and formats it according to the specified format.
+
+    Args:
+        file1 (str): The absolute path of the first file.
+        file2 (str): The absolute path of the second file.
+        format (str): The format of the output path. Options are 'explorer' (default) and 'import'.
+                      'explorer' uses standard path format, and 'import' converts the path into a relative import path.
+
+    Returns:
+        str: The relative path from file1 to file2, formatted as specified.
+    """
+    # Get the directory path of both files
+    dir1 = os.path.dirname(os.path.abspath(file1))
+    dir2 = os.path.dirname(os.path.abspath(file2))
+    
+    # Compute the relative path
+    relative_path = os.path.relpath(dir2, dir1)
+    
+
+    if os.path.isdir(file1):
+        relative_path = os.path.join('..',relative_path)
+
+
+    # If the format is 'import', switch the slashes and format with '..' for relative import
+    if format == 'import':
+        relative_path = relative_path.replace(os.path.sep, '.')  # Replace file separators with dots
+        # Remove any leading dot characters (if present), as Python relative imports use leading '..'
+        relative_path = relative_path.replace('..', '').lstrip('.')
+
+    return relative_path
+
+# # Example usage:
+# file1 = r'C:\work\code\algo-dayrun\utilities\SQL\PostgreSQL'
+# file2 = r'C:\work\code\algo-dayrun\src\test\spoofing_algo\Vessels.py'
+
+# relative_path = FindRelativePath(os.getcwd(), r'C:\work\code\algo-dayrun\src\test\spoofing_algo\Vessels.py')
+# print(f"The relative path from file1 to file2 is: {relative_path}")

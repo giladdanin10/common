@@ -19,6 +19,7 @@ import tempfile
 import webbrowser
 import os
 import subprocess
+import tempfile
 
 
 
@@ -137,6 +138,7 @@ def plot(*args, **params):
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
     x_data_type = params.get('x_data_type','index')
     mode = params.get('mode', 'lines+markers')
+    fig_name_str = params.get('fig_name_str','')    
 
 
     # Extract x_data and y_data from args or params
@@ -342,7 +344,7 @@ def plot_df_columns(
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
     save_fig = params.get('save_fig', False)
     out_dir = params.get('out_dir', './')
-    show_in_chrome = params.get('show_in_chrome', True)
+    show_in_browser = params.get('show_in_browser', True)
     new_window = params.get('new_window', True) 
     fig_name_str = params.get('fig_name_str','')
 
@@ -422,6 +424,7 @@ def plot_df_columns(
 
     # Add a global title for the entire figure (above axes titles)
     if fig_name:
+        fig_name = fig_name + fig_name_str
         fig.update_layout(
             title_text=fig_name,  # Add global title
             title_x=0.5,
@@ -442,8 +445,8 @@ def plot_df_columns(
         fig_name = 'fig'
 
 
-    if (show_in_chrome):
-        OpenFigureInChrome(fig, fig_name=fig_name+fig_name_str,new_window=new_window)
+    if (show_in_browser):
+        OpenFigureInBrowser(fig, fig_name=fig_name,new_window=new_window)
     else:
         fig.show()  
 
@@ -744,20 +747,27 @@ class Cursor:
 
 
 
-chrome_pids = []
+explorer_pids = []
 
-def OpenFigureInChrome(fig, fig_name="Plotly Figure", new_window=False, window_size=(1200, 800)):
+
+
+
+
+def OpenFigureInBrowser(fig, fig_name="Plotly Figure", new_window=False, 
+                        window_size=(1200, 800), 
+                        browser_path="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"):
     """
-    Opens a Plotly figure in a Google Chrome window. If 'new_window' is True,
-    opens in a new Chrome window. Otherwise, it opens in the current browser tab.
+    Opens a Plotly figure in a specified browser window. If 'new_window' is True,
+    opens in a new browser window. Otherwise, it opens in the current browser tab.
 
     Parameters:
     - fig: Plotly figure object to display.
     - fig_name: Custom name for the browser tab (default is 'Plotly Figure').
-    - new_window: If True, opens the figure in a new Chrome window. Default is False.
+    - new_window: If True, opens the figure in a new browser window. Default is False.
     - window_size: Tuple specifying the window size (width, height). Default is (1200, 800).
+    - browser_path: Path to the browser executable. Default is Microsoft Edge.
     """
-    global chrome_pids
+    global explorer_pids
 
     # Generate the HTML content with the custom <title> tag
     html_content = f"""
@@ -779,38 +789,39 @@ def OpenFigureInChrome(fig, fig_name="Plotly Figure", new_window=False, window_s
     # Construct the path to the temporary HTML file
     file_url = f"file://{os.path.realpath(temp_file.name)}"
 
-    chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Adjust for your OS
-
     try:
         if new_window:
-            # Open a new Chrome window and capture the process
+            # Open a new window with the specified browser and capture the process
             proc = subprocess.Popen([
-                chrome_path, 
+                browser_path, 
                 "--new-window", 
                 f"--window-size={window_size[0]},{window_size[1]}", 
                 file_url
             ])
             # Store the process ID (PID)
-            chrome_pids.append(proc.pid)
+            explorer_pids.append(proc.pid)
         else:
-            # Open in the default browser (fallback to default browser tab)
-            webbrowser.open(file_url)
+            # Open in the default browser (fallback to the webbrowser module)
+            # webbrowser.open(file_url)
+            subprocess.Popen([browser_path, file_url])
+
     except FileNotFoundError:
-        print("Chrome not found. Opening in the default browser tab instead.")
+        print(f"Browser not found at {browser_path}. Opening in the default browser tab instead.")
         webbrowser.open(file_url)
 
 
-def CloseChromeWindows():
-    """Closes only the Chrome windows that were opened by this script."""
-    global chrome_pids
 
-    for pid in chrome_pids:
+def CloseBrowserWindows():
+    """Closes only the Browser windows that were opened by this script."""
+    global explorer_pids
+
+    for pid in explorer_pids:
         try:
-            # Terminate the specific Chrome process
+            # Terminate the specific Browser process
             subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=True)
-            print(f"Closed Chrome window with PID: {pid}")
+            print(f"Closed Browser window with PID: {pid}")
         except subprocess.CalledProcessError as e:
-            print(f"Failed to close Chrome window with PID {pid}: {e}")
+            print(f"Failed to close Browser window with PID {pid}: {e}")
 
     # Clear the stored PIDs after closing
-    chrome_pids.clear()
+    explorer_pids.clear()

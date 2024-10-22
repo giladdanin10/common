@@ -73,23 +73,26 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
                     cluster_num_set.add(cluster_num)
 
                 # Point 1: start_lat_pre, start_lon_pre
-                start_lat_pre = float(row['start_lat_pre']) if row['start_lat_pre'] else None
-                start_lon_pre = float(row['start_lon_pre']) if row['start_lon_pre'] else None
-                
-                # Point 2: start_lat, start_lon (this will be in a separate layer)
                 start_lat = float(row['start_lat']) if row['start_lat'] else None
                 start_lon = float(row['start_lon']) if row['start_lon'] else None
+
+                
+                # Point 2: start_lat, start_lon (this will be in a separate layer)
+                drift_lat = float(row['drift_lat']) if row['drift_lat'] else None
+                drift_lon = float(row['drift_lon']) if row['drift_lon'] else None
                 
                 # Point 3: end_lat, end_lon
                 end_lat = float(row['end_lat']) if row['end_lat'] else None
                 end_lon = float(row['end_lon']) if row['end_lon'] else None
                 
-                if not (start_lat_pre and start_lon_pre and start_lat and start_lon and end_lat and end_lon):
+
+                if not (start_lat and start_lon and drift_lat and drift_lon and end_lat and end_lon):
                     continue  # Skip rows with missing or invalid data
                 
                 # Create features for points 1 and 3
                 point1 = QgsFeature()
-                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon_pre, start_lat_pre)))
+                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon, start_lat)))
+
                 point1.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
                 provider_1_3.addFeature(point1)
 
@@ -100,16 +103,18 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
 
                 # Create a feature for point 2
                 point2 = QgsFeature()
-                point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon, start_lat)))
+                point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(drift_lon, drift_lat)))
+
                 point2.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
                 provider_2.addFeature(point2)
 
                 # Create a line between Point 1 and Point 2
                 line1 = QgsFeature()
                 line1.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(start_lon_pre, start_lat_pre),
-                    QgsPointXY(start_lon, start_lat)
+                    QgsPointXY(start_lon, start_lat),
+                    QgsPointXY(drift_lon, drift_lat)
                 ]))
+                
                 line1.setAttributes([cluster_num])
                 line_provider.addFeature(line1)
 
@@ -117,8 +122,10 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
                 line2 = QgsFeature()
                 line2.setGeometry(QgsGeometry.fromPolylineXY([
                     QgsPointXY(end_lon, end_lat),
-                    QgsPointXY(start_lon, start_lat)
+                    QgsPointXY(drift_lon, drift_lat)
                 ]))
+
+
                 line2.setAttributes([cluster_num])
                 line_provider.addFeature(line2)
 
@@ -156,11 +163,6 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
         line_symbol.symbolLayer(0).setColor(color)
 
         # print(type(cluster_num))
-        # if cluster_num=='0':
-        #     print('kuku')
-        #     print(cluster_num)
-        #     print(highlight_clusters)
-
         # Enable only highlighted clusters if highlight_clusters is provided
         if highlight_clusters is None or int(cluster_num) in highlight_clusters:
             enabled = True

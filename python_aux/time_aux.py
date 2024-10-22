@@ -306,7 +306,7 @@ def convert_time_format(df, time_column, current_format, output_format):
 
 
 
-def get_min_max_dates(df, time_column='Time',input_format = '%Y-%m-%d %H:%M:%S',output_format='%Y-%m-%d %H:%M:%S'):
+def get_min_max_dates(df, time_column='time',input_format = '%Y-%m-%d %H:%M:%S',output_format='%Y-%m-%d %H:%M:%S'):
     """
     Function to get the minimum and maximum dates from a DataFrame's time column.
     
