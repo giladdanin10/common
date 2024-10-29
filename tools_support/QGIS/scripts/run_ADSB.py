@@ -47,9 +47,8 @@ layer_name = 'flights_spoof'
 # events_df = pd.read_csv(events_file_name)
 # with open(r"C:\work\tools\QGIS\data\ADSB\vessels_events_clusters.pkl", 'rb') as file:
 #      events_clusters = pickle.load(file)
-
+print(out_folder_name)
 events_data_file = f"{out_folder_name}\events_data_{run_name}.csv"
-print(events_data_file)
 # CreateSpoofLayersAndClusters(events_df, events_clusters, layer_name)
 # CreateSpoofLayers(f'spoof_{run_name}',rf"C:\work\tools\QGIS\data\ADSB\vessels_events_{run_name}.csv",highlight_clusters=None)
 CreateSpoofLayers(f'events_data_{run_name}',events_data_file,highlight_clusters=None)

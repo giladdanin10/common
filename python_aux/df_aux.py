@@ -503,42 +503,67 @@ def IndexToRowNum(df, index):
 
 import pandas as pd
 
-def CompareDfs(df1, df2, to_print=True):
+import pandas as pd
+
+def CompareDfs(df1, df2, to_print=True, ID_column='name'):
     """
-    Compares two DataFrames based on their indexes and returns the indexes of rows
-    that are unique to each DataFrame. Optionally prints the unique indexes or 
-    a message if the DataFrames are equal.
+    Compares two DataFrames based solely on the existence of values in a specific ID column
+    and returns IDs that are unique to each DataFrame.
 
     Parameters:
         df1 (pd.DataFrame): The first DataFrame.
         df2 (pd.DataFrame): The second DataFrame.
-        to_print (bool): If True, prints the unique indexes or equality message.
+        to_print (bool): If True, prints the unique IDs or equality message.
+        ID_column (str): The column name to use as the ID for comparison.
 
     Returns:
         dict: A dictionary with two lists:
-              'only_in_df1' - List of index values in df1 but not in df2.
-              'only_in_df2' - List of index values in df2 but not in df1.
+              'only_in_df1' - List of IDs in df1 but not in df2.
+              'only_in_df2' - List of IDs in df2 but not in df1.
     """
-    # Find unique indexes in df1 and df2
-    index_only_in_df1 = df1.index.difference(df2.index).tolist()
-    index_only_in_df2 = df2.index.difference(df1.index).tolist()
-
+    # Validate ID_column
+    if ID_column is None:
+        raise ValueError("ID_column must be provided for comparison.")
+    if ID_column not in df1.columns or ID_column not in df2.columns:
+        raise ValueError(f"Column '{ID_column}' must exist in both DataFrames.")
+    
+    # Find unique IDs in each DataFrame
+    ids_only_in_df1 = df1[~df1[ID_column].isin(df2[ID_column])][ID_column].tolist()
+    ids_only_in_df2 = df2[~df2[ID_column].isin(df1[ID_column])][ID_column].tolist()
+    
     # Print based on conditions
     if to_print:
-        if not index_only_in_df1 and not index_only_in_df2:
-            print("DataFrames are equal.")
+        if not ids_only_in_df1 and not ids_only_in_df2:
+            print("DataFrames contain the same IDs.")
         else:
-            if index_only_in_df1:
-                print("Indexes only in df1:")
-                for idx in index_only_in_df1:
+            if ids_only_in_df1:
+                print("IDs only in df1:")
+                for idx in ids_only_in_df1:
                     print(idx)
-            if index_only_in_df2:
-                print("\nIndexes only in df2:")
-                for idx in index_only_in_df2:
+            if ids_only_in_df2:
+                print("\nIDs only in df2:")
+                for idx in ids_only_in_df2:
                     print(idx)
-
+    
     return {
-        'only_in_df1': index_only_in_df1,
-        'only_in_df2': index_only_in_df2
+        'only_in_df1': ids_only_in_df1,
+        'only_in_df2': ids_only_in_df2
     }
 
+def ApplyFunctionOnSlidingWindow(df, column, function, N):
+    """
+    Apply a specified function on a sliding window over a DataFrame column.
+
+    Parameters:
+    - df: The input DataFrame
+    - column: The name of the column on which to apply the function
+    - function: The function to apply to each sliding window
+    - N: The window size
+
+    Returns:
+    - A Series with the result of the function applied to each window
+    """
+
+    CheckColumnsInDF(df,columns = [column])
+
+    return df[column].rolling(window=N).apply(function, raw=True)

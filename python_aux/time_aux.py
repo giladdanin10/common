@@ -2,6 +2,40 @@ import pandas as pd
 import time
 from datetime import datetime, timedelta
 from pandas._libs.tslibs.timestamps import Timestamp
+import pytz
+import sys
+
+def datestr2datetime(date_str, format="%Y-%m-%d %H:%M:%S", time_zone=None):
+    """
+    Converts a date string to a datetime object if the input is a string, with optional timezone and format.
+    
+    :param date_str: The date string to convert.
+    :param format: The format of the date string. Default is "%Y-%m-%d %H:%M:%S".
+    :param time_zone: Optional timezone to localize the datetime. Default is None (no timezone).
+    :return: A formatted datetime string with timezone applied if specified; otherwise, None.
+    """
+    if isinstance(date_str, str):
+        try:
+            # Truncate microseconds to six digits if needed
+            if "%f" in format and "." in date_str:
+                main_part, microseconds = date_str.split(".")
+                date_str = f"{main_part}.{microseconds[:6]}"
+            
+            # Convert to datetime
+            dt = datetime.strptime(date_str, format)
+            
+            # Apply timezone if specified
+            if time_zone:
+                tz = pytz.timezone(time_zone)
+                dt = dt.replace(tzinfo=pytz.UTC).astimezone(tz)
+            
+            # Format datetime output
+            return dt.strftime(format)
+        except ValueError:
+            print('Error: string does not match format')
+            sys.exit(1)  # Exit with an error code
+    else:
+        return date_str
 
 
 def filter_df_by_date(df, min_date, max_date, time_column='Time', date_format='%Y-%m-%d %H:%M:%S'):
@@ -168,72 +202,97 @@ import pandas as pd
 import numpy as np
 import pytz
 
-def datenum2datetime(time_num, time_zone=None):
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+import pytz
+
+
+def datetime2datestr(dt, format="%Y-%m-%d %H:%M:%S"):
+    """
+    Converts a datetime object to a formatted date string.
+
+    :param dt: The datetime object to convert.
+    :param format: The format for the output date string. Default is "%Y-%m-%d %H:%M:%S".
+    :return: A formatted date string, or None if the input is not a datetime object.
+    """
+    if isinstance(dt, (datetime, pd.Timestamp)):
+        return dt.strftime(format)
+    else:
+        print("Error: Input is not a datetime or Timestamp object.")
+        return None
+
+
+def datenum2datetime(time_num, time_zone=None, format="%Y-%m-%d %H:%M:%S"):
     """
     Converts various input formats to datetime. Optionally applies a time zone.
 
     :param time_num: Input data (int, str, list, pd.Series, np.ndarray).
     :param time_zone: The time zone to apply. Default is None (no timezone conversion).
+    :param format: The format for input date strings. Default is "%Y-%m-%d %H:%M:%S".
     :return: Datetime or series of datetimes with optional time zone conversion.
     """
     def convert_to_datetime(x):
         """Convert a single value to datetime."""
-        if isinstance(x, (pd.Timestamp, Timestamp, pd.DatetimeIndex)):  # Already a datetime object
+        if isinstance(x, (pd.Timestamp, datetime)):
             return x
-        elif isinstance(x, (int, np.int64, float, np.float32, np.float64)):
-            return pd.to_datetime(x, unit='s')  # Treat as seconds since epoch
+        elif isinstance(x, (int, np.integer, float, np.floating)):
+            return pd.to_datetime(x, unit='s')
         elif isinstance(x, str):
-            return pd.to_datetime(x)
+            return pd.to_datetime(x, format=format)
         elif isinstance(x, pd.Series):
             return pd.to_datetime(x)
         else:
             raise ValueError(f"Unsupported data type: {type(x)}")
 
     def apply_timezone(dt_series, time_zone):
-        """Apply timezone to datetime series."""
+        """Apply timezone to datetime series or single Timestamp."""
         if time_zone:
             tz = pytz.timezone(time_zone)
-            return dt_series.dt.tz_localize('UTC').dt.tz_convert(tz)
+            if isinstance(dt_series, pd.Series):
+                return dt_series.dt.tz_localize('UTC').dt.tz_convert(tz)
+            else:  # Handle individual Timestamp or datetime
+                return dt_series.tz_localize('UTC').tz_convert(tz)
         return dt_series
 
     # Handle Pandas Series
     if isinstance(time_num, pd.Series):
-        if pd.api.types.is_integer_dtype(time_num) or pd.api.types.is_float_dtype(time_num):
+        if pd.api.types.is_numeric_dtype(time_num):
             dt_series = pd.to_datetime(time_num, unit='s')
         elif pd.api.types.is_datetime64_any_dtype(time_num):
             dt_series = time_num
         elif pd.api.types.is_string_dtype(time_num):
-            dt_series = pd.to_datetime(time_num)
+            dt_series = pd.to_datetime(time_num, format=format)
         else:
             raise ValueError("Unsupported data type in Series")
         return apply_timezone(dt_series, time_zone)
 
     # Handle individual numeric values
-    elif isinstance(time_num, (int, np.int64, float, np.float32, np.float64)):
+    elif isinstance(time_num, (int, np.integer, float, np.floating)):
         dt = pd.to_datetime(time_num, unit='s')
-        return apply_timezone(pd.Series([dt]), time_zone).iloc[0]
+        return apply_timezone(dt, time_zone)
 
     # Handle lists
     elif isinstance(time_num, list):
         if all(isinstance(x, int) for x in time_num):
             dt_series = pd.to_datetime(time_num, unit='s')
         elif all(isinstance(x, str) for x in time_num):
-            dt_series = pd.to_datetime(time_num)
+            dt_series = pd.to_datetime(time_num, format=format)
         else:
             raise ValueError("Unsupported data type in list")
         return apply_timezone(dt_series, time_zone)
 
     # Handle string inputs
     elif isinstance(time_num, str):
-        dt = pd.to_datetime(time_num)
-        return apply_timezone(pd.Series([dt]), time_zone).iloc[0]
+        dt = pd.to_datetime(time_num, format=format)
+        return apply_timezone(dt, time_zone)
 
     # Handle NumPy arrays
     elif isinstance(time_num, np.ndarray):
         if np.issubdtype(time_num.dtype, np.integer) or np.issubdtype(time_num.dtype, np.floating):
             dt_series = pd.to_datetime(time_num, unit='s')
         elif np.issubdtype(time_num.dtype, np.str_):
-            dt_series = pd.to_datetime(time_num)
+            dt_series = pd.to_datetime(time_num, format=format)
         elif np.issubdtype(time_num.dtype, np.datetime64):
             dt_series = pd.to_datetime(time_num)
         elif np.issubdtype(time_num.dtype, np.object_):
@@ -243,13 +302,12 @@ def datenum2datetime(time_num, time_zone=None):
             raise ValueError("Unsupported NumPy array data type")
         return apply_timezone(dt_series, time_zone)
 
-    # Handle already a datetime or Timestamp object
-    elif isinstance(time_num, (pd.Timestamp, Timestamp)):
-        return time_num
+    # Handle individual datetime or Timestamp objects directly
+    elif isinstance(time_num, (pd.Timestamp, datetime)):
+        return apply_timezone(time_num, time_zone)
 
     else:
         raise ValueError(f"Unsupported input type: {type(time_num)}")
-
 # Example usage:
 # Single integer
 # print(datenum2datetime(1719741600))

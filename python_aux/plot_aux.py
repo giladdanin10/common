@@ -323,7 +323,7 @@ def plot_df_columns(
         
     # Extract parameters from **params, providing default values if not given
     x_column = params.get('x_column', None)  
-    sub_plots = params.get('sub_plots', False)
+    sub_plots = params.get('sub_plots', True)
     line_color = params.get('line_color', None)  
     axes_size = params.get('axes_size', None)
     max_axes_in_row = params.get('max_axes_in_row', 2)
@@ -343,7 +343,7 @@ def plot_df_columns(
     fig_name = params.get('fig_name', None)  # Add global title parameter
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
     save_fig = params.get('save_fig', False)
-    out_dir = params.get('out_dir', './')
+    out_dir = params.get('out_dir', './figures/')
     show_in_browser = params.get('show_in_browser', True)
     new_window = params.get('new_window', True) 
     fig_name_str = params.get('fig_name_str','')
@@ -446,7 +446,7 @@ def plot_df_columns(
 
 
     if (show_in_browser):
-        OpenFigureInBrowser(fig, fig_name=fig_name,new_window=new_window)
+        OpenFigureInBrowser(fig, fig_name=fig_name,new_window=new_window,out_dir=out_dir)
     else:
         fig.show()  
 
@@ -755,7 +755,8 @@ explorer_pids = []
 
 def OpenFigureInBrowser(fig, fig_name="Plotly Figure", new_window=False, 
                         window_size=(1200, 800), 
-                        browser_path="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"):
+                        browser_path="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+                        out_dir='./figures/'):
     """
     Opens a Plotly figure in a specified browser window. If 'new_window' is True,
     opens in a new browser window. Otherwise, it opens in the current browser tab.
@@ -766,28 +767,32 @@ def OpenFigureInBrowser(fig, fig_name="Plotly Figure", new_window=False,
     - new_window: If True, opens the figure in a new browser window. Default is False.
     - window_size: Tuple specifying the window size (width, height). Default is (1200, 800).
     - browser_path: Path to the browser executable. Default is Microsoft Edge.
+    - file_name: Optional name for the HTML file. Default is None (temporary file).
     """
     global explorer_pids
 
-    # Generate the HTML content with the custom <title> tag
-    html_content = f"""
-    <html>
-    <head>
-        <title>{fig_name}</title>  <!-- Custom Tab Name -->
-    </head>
-    <body>
-        {fig.to_html(full_html=False, include_plotlyjs='cdn')}  <!-- Embed the Plotly figure -->
-    </body>
-    </html>
-    """
+    # Generate the complete HTML content with full_html=True
+    html_content = fig.to_html(full_html=True, include_plotlyjs='cdn')
+    
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
 
-    # Save the HTML content to a temporary file
-    temp_file = tempfile.NamedTemporaryFile(suffix=".html", delete=False, mode="w", encoding="utf-8")
-    temp_file.write(html_content)
-    temp_file.close()
+    # Determine the file path
+    file_name = out_dir+fig_name
+    if file_name:
+        # Use specified file name in the current directory
+        file_path = os.path.abspath(file_name + ".html")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+    else:
+        # Use a temporary file if no file name is provided
+        temp_file = tempfile.NamedTemporaryFile(suffix=".html", delete=False, mode="w", encoding="utf-8")
+        temp_file.write(html_content)
+        temp_file.close()
+        file_path = temp_file.name
 
-    # Construct the path to the temporary HTML file
-    file_url = f"file://{os.path.realpath(temp_file.name)}"
+    # Construct the URL to the file
+    file_url = f"file://{file_path}"
 
     try:
         if new_window:
@@ -802,13 +807,11 @@ def OpenFigureInBrowser(fig, fig_name="Plotly Figure", new_window=False,
             explorer_pids.append(proc.pid)
         else:
             # Open in the default browser (fallback to the webbrowser module)
-            # webbrowser.open(file_url)
             subprocess.Popen([browser_path, file_url])
 
     except FileNotFoundError:
         print(f"Browser not found at {browser_path}. Opening in the default browser tab instead.")
         webbrowser.open(file_url)
-
 
 
 def CloseBrowserWindows():

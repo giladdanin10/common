@@ -153,15 +153,18 @@ def print_list_as_column(lst):
 def FlattenAList(nested_list):
     """
     This function takes a list of lists and flattens it into a single list.
+    If the input is not a list, it returns the input as-is.
     
     Parameters:
-    - nested_list: A list of lists (or other iterables).
+    - nested_list: A list of lists or any other iterable or non-iterable object.
     
     Returns:
-    - A single flattened list containing all elements from the sub-lists.
+    - A single flattened list if the input is a list of lists, or the input itself if not.
     """
-    # Use a list comprehension to flatten the nested list
-    return [item for sublist in nested_list for item in sublist]
+    if isinstance(nested_list, list):
+        return [item for sublist in nested_list for item in (sublist if isinstance(sublist, list) else [sublist])]
+    else:
+        return nested_list
 
 
 def GetUniqueListMembers(input_list, preserve_order=True):

@@ -65,6 +65,7 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
     with open(csv_file, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
+            print(row['cluster_num'])
             try:
                 # Collect unique ship names in the original order
                 cluster_num = row['cluster_num']
