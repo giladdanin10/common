@@ -49,7 +49,7 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
         QgsField('start_time', QVariant.String),
         QgsField('end_time', QVariant.String),
         QgsField('type', QVariant.String),
-        QgsField('name', QVariant.String)
+        QgsField('vessel_id', QVariant.String)
     ]
     provider_1_3.addAttributes(fields)
     provider_2.addAttributes(fields)
@@ -73,46 +73,46 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
                     cluster_nums.append(cluster_num)
                     cluster_num_set.add(cluster_num)
 
-                # Point 1: start_lat_pre, start_lon_pre
-                start_lat = float(row['start_lat']) if row['start_lat'] else None
-                start_lon = float(row['start_lon']) if row['start_lon'] else None
+                # Point 1: entry_lat_pre, entry_lon_pre
+                entry_lat = float(row['entry_lat']) if row['entry_lat'] else None
+                entry_lon = float(row['entry_lon']) if row['entry_lon'] else None
 
                 
-                # Point 2: start_lat, start_lon (this will be in a separate layer)
+                # Point 2: entry_lat, entry_lon (this will be in a separate layer)
                 drift_lat = float(row['drift_lat']) if row['drift_lat'] else None
                 drift_lon = float(row['drift_lon']) if row['drift_lon'] else None
                 
-                # Point 3: end_lat, end_lon
-                end_lat = float(row['end_lat']) if row['end_lat'] else None
-                end_lon = float(row['end_lon']) if row['end_lon'] else None
+                # Point 3: exit_lat, exit_lon
+                exit_lat = float(row['exit_lat']) if row['exit_lat'] else None
+                exit_lon = float(row['exit_lon']) if row['exit_lon'] else None
                 
 
-                if not (start_lat and start_lon and drift_lat and drift_lon and end_lat and end_lon):
+                if not (entry_lat and entry_lon and drift_lat and drift_lon and exit_lat and exit_lon):
                     continue  # Skip rows with missing or invalid data
                 
                 # Create features for points 1 and 3
                 point1 = QgsFeature()
-                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(start_lon, start_lat)))
+                point1.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(entry_lon, entry_lat)))
 
-                point1.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
+                point1.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
                 provider_1_3.addFeature(point1)
 
                 point3 = QgsFeature()
-                point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(end_lon, end_lat)))
-                point3.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
+                point3.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(exit_lon, exit_lat)))
+                point3.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
                 provider_1_3.addFeature(point3)
 
                 # Create a feature for point 2
                 point2 = QgsFeature()
                 point2.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(drift_lon, drift_lat)))
 
-                point2.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['name']])
+                point2.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
                 provider_2.addFeature(point2)
 
                 # Create a line between Point 1 and Point 2
                 line1 = QgsFeature()
                 line1.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(start_lon, start_lat),
+                    QgsPointXY(entry_lon, entry_lat),
                     QgsPointXY(drift_lon, drift_lat)
                 ]))
                 
@@ -122,7 +122,7 @@ def CreateSpoofLayers(layer_name, csv_file, output_shapefile=None, highlight_clu
                 # Create a line between Point 3 and Point 2
                 line2 = QgsFeature()
                 line2.setGeometry(QgsGeometry.fromPolylineXY([
-                    QgsPointXY(end_lon, end_lat),
+                    QgsPointXY(exit_lon, exit_lat),
                     QgsPointXY(drift_lon, drift_lat)
                 ]))
 

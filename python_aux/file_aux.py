@@ -329,3 +329,35 @@ def FindRelativePath(file1, file2, format='explorer'):
 
 # relative_path = FindRelativePath(os.getcwd(), r'C:\work\code\algo-dayrun\src\test\spoofing_algo\Vessels.py')
 # print(f"The relative path from file1 to file2 is: {relative_path}")
+
+def CopyFile(source_path, destination_path):
+    """
+    Copy a file from the source path to the destination path.
+
+    Args:
+        source_path (str): The path of the source file to be copied.
+        destination_path (str): The path of the destination file to copy to.
+
+    Returns:
+        bool: True if the file was copied successfully, False otherwise.
+    """
+    try:
+        with open(source_path, 'rb') as source_file:
+            with open(destination_path, 'wb') as destination_file:
+                destination_file.write(source_file.read())
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+source_path = Path("path/to/source/file.txt")
+destination_path = Path("path/to/destination/file.txt")
+
+try:
+    destination_path.write_bytes(source_path.read_bytes())
+    print("File copied successfully.")
+except FileNotFoundError:
+    print("The source file does not exist.")
+except PermissionError:
+    print("Permission denied. Check your access rights.")
+except Exception as e:
+    print(f"An error occurred: {e}")
