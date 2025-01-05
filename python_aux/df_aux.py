@@ -60,6 +60,17 @@ def merge_dataframes_on_index(df1, df2, how='left', mode='merge'):
 
     return merged_df
 
+def PrepareFilter(filter_dic):
+    if isinstance(filter_dic, dict):
+        # Recursively handle dictionaries
+        return {key: PrepareFilter(value) for key, value in filter_dic.items()}
+    elif isinstance(filter_dic, list):
+        # Convert lists to tuples
+        return tuple(PrepareFilter(item) for item in filter_dic)
+    else:
+        # Return other types as-is
+        return filter_dic
+
 
 def filter_df(df, filter_dic,to_copy=False):
     """
@@ -79,7 +90,10 @@ def filter_df(df, filter_dic,to_copy=False):
 
     if (filter_dic==None) or (len(filter_dic.keys())==0) or df is None or df.empty:
         return df
-
+    
+    
+# convert layer definition from list to tupple ({'cluster_id': ['==', 1]} --> {'cluster_id': ('==', 1)})
+    filter_dic = PrepareFilter(filter_dic)
     if (to_copy):
         filtered_df = copy.deepcopy(df)  # Create a copy of the DataFrame to avoid modifying the original
     else:

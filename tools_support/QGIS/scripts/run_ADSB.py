@@ -7,51 +7,13 @@ import pandas as pd
 import sys
 from pathlib import Path
 import os
-# current_path = Path(os.getcwd())
-# sys.path.append(str(Path (current_path.parents[2] / "common" / "python_aux")))  # Ensure the path is a string
+runn_dir_base = r'C:\work\code\TipAndQue-algo\src\test\spoofing\run_results\\'
+run_name = 'aircraft_data_20240401_algo_dr_based'   
+in_dir = runn_dir_base +run_name+'\\'+ "QGIS_in" + "\\"
 
+#in_dir = r'C:\work\code\TipAndQue-algo\src\test\pipline\spoof\testing\temp_output\\'
 
-# print (sys.path)
-
-
-# import file_aux as filea
-# sys.path.append('..')  # Add the parent directory to sys.path
-
-#from QGISDriver import QGIS
-
-RestartProject()
-
-# layer_name = 'flights'
-# data_file = r"C:\work\tools\QGIS\data\ADSB\vessels_data.csv"
-
-
-# csv_file_name = "aircraft_data_20241007_142123.csv"
-# # csv_file_name = "aircraft_data_20241008_125040.csv"
-
-# out_folder_name = csv_file_name.split('.')[0]
-# out_folder_name = rf"./pkl/{out_folder_name}"
-# out_folder_name = rf"C:\work\code\algo-dayrun\src\test\spoofing_algo\pkl\aircraft_data_20241007_142123"
-
-
-# run_name = 'new'
-
-
-
-
-
-# vessels_data_file=fr"{out_folder_name}\vessels_data_{run_name}.csv"
-# CreateVesselPathLayer(f"vessels_data_{run_name}",vessels_data_file,classification_node='name',location_columns_dic={'lat': 'lat', 'lon': 'lon'})    
-
-# layer_name = 'flights_spoof'
-# # events_file_name = file_name=fr"{out_folder_name}\events_data_{run_name}.csv"
-# # events_df = pd.read_csv(events_file_name)
-# # with open(r"C:\work\tools\QGIS\data\ADSB\vessels_events_clusters.pkl", 'rb') as file:
-# #      events_clusters = pickle.load(file)
-# print(out_folder_name)
-# events_data_file = f"{out_folder_name}\events_data_{run_name}.csv"
-# # CreateSpoofLayersAndClusters(events_df, events_clusters, layer_name)
-# # CreateSpoofLayers(f'spoof_{run_name}',rf"C:\work\tools\QGIS\data\ADSB\vessels_events_{run_name}.csv",highlight_clusters=None)
-
-in_dir = r'C:\work\code\TipAndQue-algo\src\test\spoofing\Assisting_data\QGIS_in\\'
 events_data_file = in_dir+"spoof_cases_df.csv"
-CreateSpoofLayers('spoofing',events_data_file,highlight_clusters=None)
+vessels_data_file = in_dir+"vessels_data.csv"
+CreateSpoofLayers(run_name,events_data_file,highlight_clusters=None)
+CreateVesselPathLayer(run_name,vessels_data_file,classification_node='vessel_id',location_columns_dic={'lat': 'lat', 'lon': 'lon'})    
