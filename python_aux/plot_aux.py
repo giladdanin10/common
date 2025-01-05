@@ -339,7 +339,7 @@ def plot_df_columns(
     sync_yaxes = params.get('sync_yaxes', False)
     marker_points_dic = params.get('marker_points_dic', None)
     x_data_type = params.get('x_data_type', 'index')
-    time_column = params.get('time_column', 'time')
+    time_column = params.get('time_column', 'timestamp')
     fig_name = params.get('fig_name', None)  # Add global title parameter
     title_font_size = params.get('title_font_size', 18)  # New parameter for title font size
     save_fig = params.get('save_fig', False)
@@ -352,10 +352,18 @@ def plot_df_columns(
     if x_data_type == 'index':
         x_data = range(df.shape[0])
         xlabel = 'index'
-    else:
-        # x_data = timea.datenum2datetime(df[time_column])
+
+    elif x_data_type == 'time':        
         x_data = df[time_column]
         xlabel = 'time'
+
+    elif x_data_type == 'df_index':
+        x_data = df.index
+        xlabel = 'df_index'
+
+    elif x_data_type == 'x_column':
+        x_data = df[x_column]
+        xlabel = x_column
 
     if sub_plots:
         if isinstance(columns[0], str):
