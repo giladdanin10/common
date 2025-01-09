@@ -3,12 +3,12 @@ import numpy as np
 import dict_aux as dicta
 import convert_aux as converta
 
-def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence', compare_columns=None, eps=1e-5, ignore_time_columns=False,ignore_columns=None):    
+def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence', compare_columns=None, eps=1e-5, ignore_time_columns=False,ignore_columns=None,report_file_name='compare_res.txt'):    
     """
     Compares two DataFrames based solely on the existence of values in specific ID columns
     and returns IDs that are unique to each DataFrame.
 
-    Parameters:
+    Parameters: 
         df1 (pd.DataFrame): The first DataFrame.
         df2 (pd.DataFrame): The second DataFrame.
         to_print (bool): If True, prints the unique IDs or equality message.
@@ -20,11 +20,6 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
               'only_in_df1' - List of unique IDs in df1 but not in df2.
               'only_in_df2' - List of unique IDs in df2 but not in df1.
     """
-
-
-    
-
-
 
     diff_dic = {}
     df1.reset_index(drop=True, inplace=True)
@@ -85,10 +80,11 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
         # Remove rows with unique IDs that are only in one of the DataFrames
         df1 = df1[~df1['unique_id'].isin(ids_only_in_df1)]
         df2 = df2[~df2['unique_id'].isin(ids_only_in_df2)]
-
+        df1.sort_values(by='unique_id', inplace=True)
         df1.reset_index(drop=False, inplace=True)
+        df2.sort_values(by='unique_id', inplace=True)
         df2.reset_index(drop=False, inplace=True)
-
+        
         if compare_columns is None:
             compare_columns = df1.columns.tolist()
 
@@ -146,60 +142,30 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
     else:
         print('DataFrames are different; see diff_dic for details')
 
+    
+    with open(report_file_name, 'w') as f:
+        if ('only_in_df1' in diff_dic):
+            f.write(f'{ID_columns[0]}\'s only in df1:\n')
+            for i,id_val in enumerate(diff_dic['only_in_df1']):
+                f.write(f'{id_val}\n')
+            f.write('\n')
+        
+        if ('only_in_df2' in diff_dic):
+            f.write(f'{ID_columns[0]}\'s only in df1:\n')
+            for i,id_val in enumerate(diff_dic['only_in_df2']):
+                f.write(f'{id_val}\n')
+            f.write('\n')
+
+
+
+        for key in compare_columns:
+            if (key in diff_dic.keys()):
+                f.write(f'comparing "{key}" values:\n')
+                for i,id_val in enumerate(diff_dic[key][ID_columns[0]]):
+                    f.write(f'{id_val}: df1 - {diff_dic[key]['df1'][i]}, df2 - {diff_dic[key]['df2'][i]} \n')
+                f.write('\n')
+
+
+
+
     return diff_dic
-
-
-def CompareLists(list1, list2, mode='check_existence'):
-    """
-    Compares two lists and returns differences based on the specified mode.
-
-    Parameters:
-        list1 (list): The first list.
-        list2 (list): The second list.
-        mode (str): The comparison mode. 
-                    'check_existence' checks for unique items in each list.
-                    'check_values' compares corresponding values element-wise.
-
-    Returns:
-        dict: A dictionary with the differences:
-              - 'only_in_list1': Items unique to list1.
-              - 'only_in_list2': Items unique to list2.
-              - 'value_differences': Indexes and values that differ (if mode is 'check_values').
-    """
-    if list1 is None:
-        list1 = []
-    if list2 is None:
-        list2 = []
-
-    diff_dict = {}
-
-    if mode == 'check_existence':
-        # Unique items in each list
-        diff_dict['only_in_list1'] = [item for item in list1 if item not in list2]
-        diff_dict['only_in_list2'] = [item for item in list2 if item not in list1]
-
-    elif mode == 'check_values':
-        # Ensure lists are the same length
-        max_len = max(len(list1), len(list2))
-        list1 = list1 + [None] * (max_len - len(list1))  # Pad with None if shorter
-        list2 = list2 + [None] * (max_len - len(list2))  # Pad with None if shorter
-
-        # Compare values at each index
-        value_differences = []
-        for i, (val1, val2) in enumerate(zip(list1, list2)):
-            if val1 != val2:
-                value_differences.append({
-                    'index': i,
-                    'list1_value': val1,
-                    'list2_value': val2
-                })
-
-        diff_dict['value_differences'] = value_differences
-
-    # Print results if any differences
-    if not diff_dict:
-        print('Lists are equal.')
-    else:
-        print('Lists are different; see diff_dict for details.')
-
-    return diff_dict
