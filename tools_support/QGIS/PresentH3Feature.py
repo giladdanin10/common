@@ -102,9 +102,9 @@ def PresentH3Feature(csv_file, h3_index_column, present_column):
         print(f"Error in PresentH3Feature: {e}")
 
 
-# Example usage
-csv_file = r"C:\work\code\TipAndQue-algo\src\test\jamming\pre_process\aircraft_data_20240401\h3_features_df_16.csv"
+# # Example usage
+# csv_file = r"C:\work\code\TipAndQue-algo\src\test\jamming\pre_process\aircraft_data_20240401\h3_features_df_16.csv"
 
-present_column = "nac_p_max"  # Replace with the column to present
-h3_index_column = "level_0"
-PresentH3Feature(csv_file,h3_index_column,present_column)
+# present_column = "nac_p_max"  # Replace with the column to present
+# h3_index_column = "level_0"
+# PresentH3Feature(csv_file,h3_index_column,present_column)

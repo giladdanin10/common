@@ -21,7 +21,7 @@ def CreateSpoofLayers(layer_name="spoof", run_dir=None, output_shapefile=None, h
         if layer.name() in [
             layer_name + '_entry_points',
             layer_name + '_exit_points',
-            layer_name + '_spoof_target',
+            layer_name + '_drift_area',
             layer_name + '_lines',
             layer_name + '_drift_area'
         ]:
@@ -34,7 +34,7 @@ def CreateSpoofLayers(layer_name="spoof", run_dir=None, output_shapefile=None, h
     exit_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_exit_points', 'memory')
     provider_exit = exit_points_layer.dataProvider()
 
-    target_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_spoof_target', 'memory')
+    target_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_drift_area', 'memory')
     provider_target = target_points_layer.dataProvider()
 
     line_layer = QgsVectorLayer('LineString?crs=EPSG:4326', layer_name + '_lines', 'memory')

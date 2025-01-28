@@ -361,3 +361,20 @@ except PermissionError:
     print("Permission denied. Check your access rights.")
 except Exception as e:
     print(f"An error occurred: {e}")
+
+
+
+def get_workspace_root():
+    # Start from the current notebook's directory
+    current_dir = Path.cwd()
+
+    # Walk up the directory tree to find the workspace root
+    for parent in current_dir.parents:
+        if (parent / ".git").exists() or (parent / "workspace.code-workspace").exists():
+            workspace_root = parent
+            break
+    else:
+        workspace_root = current_dir  # Default to the notebook directory
+
+    return str(workspace_root)
+
