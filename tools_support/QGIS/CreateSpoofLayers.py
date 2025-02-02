@@ -80,6 +80,7 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
     if (spoof_cases_df_csv_file is not None):
         with open(spoof_cases_df_csv_file, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
+            reader
             for row in reader:
                 try:
                     cluster_num = row['cluster_num']

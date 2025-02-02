@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import dict_aux as dicta
 import convert_aux as converta
+import df_aux as dfa
 
-def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence', compare_columns=None, eps=1e-5, ignore_time_columns=False,ignore_columns=None,report_file_name='compare_res.txt'):    
+def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence', compare_columns=None, eps=1e-5, ignore_time_columns=False,ignore_columns=None,report_file_name='compare_res.txt',filter_dic=None):    
     """
     Compares two DataFrames based solely on the existence of values in specific ID columns
     and returns IDs that are unique to each DataFrame.
@@ -43,6 +44,11 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
     if df2 is None:
         df2 = pd.DataFrame()
 
+
+    df1 = dfa.filter_df(df1,filter_dic)
+    df2 = dfa.filter_df(df2,filter_dic)
+
+
     if df1.empty:
         if (df2.empty):
             diff_dic = {}
@@ -74,6 +80,19 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
         diff_dic['only_in_df2'] = ids_only_in_df2
 
     if mode == 'check_existence':
+        with open(report_file_name, 'w') as f:
+            if ('only_in_df1' in diff_dic):
+                f.write(f'{ID_columns[0]}\'s only in df1:\n')
+                for i,id_val in enumerate(diff_dic['only_in_df1']):
+                    f.write(f'{id_val}\n')
+                f.write('\n')
+            
+            if ('only_in_df2' in diff_dic):
+                f.write(f'{ID_columns[0]}\'s only in df1:\n')
+                for i,id_val in enumerate(diff_dic['only_in_df2']):
+                    f.write(f'{id_val}\n')
+                f.write('\n')
+
         return diff_dic
 
     elif mode == 'check_values':
