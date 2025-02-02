@@ -11,6 +11,9 @@ from ipywidgets import Label, VBox
 from ipyleaflet import Map, TileLayer
 import re
 from shapely.geometry import MultiPoint
+import os
+from pathlib import Path
+
 
 from ipywidgets import HTML
 import random
@@ -653,5 +656,30 @@ def calculate_centroid(points):
     centroid = multi_point.centroid
     
     return centroid
+
+
+def get_country_name_from_lat_lon(lat, lon):
+
+# Get the current file's directory
+
+    cur_file_path = Path(os.path.abspath(__file__))
+
+    # Correct the folder name if needed
+    countries_file_name = cur_file_path.parent.parent / "assets" / "countries_shp" / "ne_110m_admin_0_countries.shp"
+
+
+    # TODO: First please download it from 'https://github.com/georust/shapefile/blob/master/assets/ne_110m_admin_0_countries.shp'
+    world = gpd.read_file(countries_file_name)
+    # Create a GeoDataFrame for the points
+    points_gdf = gpd.GeoDataFrame(
+        geometry=[Point(lon, lat)],
+        crs=world.crs  # Ensure the CRS matches
+    )
+
+    # Perform a spatial join between the points and the world GeoDataFrame
+    joined = gpd.sjoin(points_gdf, world, how="left", predicate="within")
+
+    return joined['NAME'].iloc[0]
+
 
 
