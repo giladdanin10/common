@@ -22,6 +22,20 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
               'only_in_df2' - List of unique IDs in df2 but not in df1.
     """
 
+    def my_print(f,str):
+        f.write(str)
+        print(str)
+
+    try:
+        f = open(report_file_name, 'w') 
+        
+    except:
+                
+        my_print('Error opening report file')
+        return
+
+
+
     diff_dic = {}
     df1.reset_index(drop=True, inplace=True)
     df2.reset_index(drop=True, inplace=True)
@@ -45,14 +59,26 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
         df2 = pd.DataFrame()
 
 
+    if (df1.empty):
+        my_print(f,"df1 is empty")
+
+    if (df2.empty):
+        my_print(f,"df2 is empty")
+
     df1 = dfa.filter_df(df1,filter_dic)
     df2 = dfa.filter_df(df2,filter_dic)
+
+    if (df1.empty):
+        my_print(f,"df1 after applying filter_dic is empty")
+
+    if (df2.empty):
+        my_print(f,"df2 after applying filter_dic is empty")
 
 
     if df1.empty:
         if (df2.empty):
             diff_dic = {}
-            print('DataFrames are equal')
+            my_print(f,'DataFrames are equal')
         else:
             diff_dic['only_in_df2'] = df2[ID_columns].agg('-'.join, axis=1).tolist()
         return diff_dic
@@ -60,7 +86,7 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
     if df2.empty:
         if (df1.empty):
             diff_dic = {}
-            print('DataFrames are equal')
+            my_print(f,'DataFrames are equal')
         else:
             diff_dic['only_in_df1'] = df1[ID_columns].agg('-'.join, axis=1).tolist()
         return diff_dic
@@ -80,19 +106,22 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
         diff_dic['only_in_df2'] = ids_only_in_df2
 
     if mode == 'check_existence':
-        with open(report_file_name, 'w') as f:
-            if ('only_in_df1' in diff_dic):
-                f.write(f'{ID_columns[0]}\'s only in df1:\n')
-                for i,id_val in enumerate(diff_dic['only_in_df1']):
-                    f.write(f'{id_val}\n')
-                f.write('\n')
-            
-            if ('only_in_df2' in diff_dic):
-                f.write(f'{ID_columns[0]}\'s only in df1:\n')
-                for i,id_val in enumerate(diff_dic['only_in_df2']):
-                    f.write(f'{id_val}\n')
-                f.write('\n')
+        if ('only_in_df1' in diff_dic):
+            my_print(f,f'{ID_columns[0]}\'s only in df1:\n')
+            for i,id_val in enumerate(diff_dic['only_in_df1']):
+                my_print(f,f'{id_val}\n')
+            my_print(f,'\n')
+        
+        if ('only_in_df2' in diff_dic):
+            my_print(f,f'{ID_columns[0]}\'s only in df1:\n')
+            for i,id_val in enumerate(diff_dic['only_in_df2']):
+                my_print(f,f'{id_val}\n')
+            my_print(f,'\n')
 
+        if (diff_dic):
+            my_print(f,'DataFrames are different; see diff_dic for details')
+        else:
+            my_print(f,'DataFrames are equal!')
         return diff_dic
 
     elif mode == 'check_values':
@@ -141,7 +170,7 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
                     # For non-numeric (including boolean) columns, use direct comparison
                     ind_diff = df1[column] != df2[column]
                 except Exception as e:
-                    print(f"Error comparing column '{column}': {e}")
+                    my_print(f,f"Error comparing column '{column}': {e}")
                     ind_diff = pd.Series([False] * len(df1))
 
             if ind_diff.any():  # Check if ind_diff is not empty
@@ -157,32 +186,31 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
                 diff_dic[column]['df2'] = df2.loc[ind_diff, column].tolist()
 
     if not diff_dic:
-        print('DataFrames are equal')
+        my_print(f,'DataFrames are equal!')
     else:
-        print('DataFrames are different; see diff_dic for details')
+        my_print(f,'DataFrames are different; see diff_dic for details')
 
     
-    with open(report_file_name, 'w') as f:
-        if ('only_in_df1' in diff_dic):
-            f.write(f'{ID_columns[0]}\'s only in df1:\n')
-            for i,id_val in enumerate(diff_dic['only_in_df1']):
-                f.write(f'{id_val}\n')
-            f.write('\n')
-        
-        if ('only_in_df2' in diff_dic):
-            f.write(f'{ID_columns[0]}\'s only in df1:\n')
-            for i,id_val in enumerate(diff_dic['only_in_df2']):
-                f.write(f'{id_val}\n')
-            f.write('\n')
+    if ('only_in_df1' in diff_dic):
+        my_print(f,f'{ID_columns[0]}\'s only in df1:\n')
+        for i,id_val in enumerate(diff_dic['only_in_df1']):
+            my_print(f,f'{id_val}\n')
+        my_print(f,'\n')
+    
+    if ('only_in_df2' in diff_dic):
+        my_print(f,f'{ID_columns[0]}\'s only in df1:\n')
+        for i,id_val in enumerate(diff_dic['only_in_df2']):
+            my_print(f,f'{id_val}\n')
+        my_print(f,'\n')
 
 
 
-        for key in compare_columns:
-            if (key in diff_dic.keys()):
-                f.write(f'comparing "{key}" values:\n')
-                for i,id_val in enumerate(diff_dic[key][ID_columns[0]]):
-                    f.write(f'{id_val}: df1 - {diff_dic[key]['df1'][i]}, df2 - {diff_dic[key]['df2'][i]} \n')
-                f.write('\n')
+    for key in compare_columns:
+        if (key in diff_dic.keys()):
+            my_print(f,f'comparing "{key}" values:\n')
+            for i,id_val in enumerate(diff_dic[key][ID_columns[0]]):
+                my_print(f,f'{id_val}: df1 - {diff_dic[key]['df1'][i]}, df2 - {diff_dic[key]['df2'][i]} \n')
+            my_print(f,'\n')
 
 
 

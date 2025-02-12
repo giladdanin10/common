@@ -246,7 +246,7 @@ def plot(*args, **params):
                 for j, loc in enumerate(locs):
                     # if loc in x_data_num:
                     # idx = np.argmin(np.abs(x_data_num - loc))  # Find closest index in x_data
-                    idx = loc
+                    idx = int(loc)
                     # Add the marker as a separate trace
                     show_legend = marker_name is not None and marker_name not in added_names
                     if show_legend:
@@ -458,8 +458,10 @@ def plot_df_columns(
     else:
         fig.show()  
 
-    # if save_fig:        
-    #     fig.write_html(f'{out_dir}/{fig_name}.html')
+    if save_fig:      
+        if (os.path.exists(out_dir)==False):
+            os.makedirs(out_dir)
+        fig.write_html(f'{out_dir}/{fig_name}.html')
 
     # return fig, axes
 

@@ -581,3 +581,51 @@ def ApplyFunctionOnSlidingWindow(df, column, function, N):
     CheckColumnsInDF(df,columns = [column])
 
     return df[column].rolling(window=N).apply(function, raw=True)
+
+
+import pandas as pd
+import ast
+
+
+def decode_dict_column_from_df(df, dic_column, mode='append'):
+    def safe_eval(val):
+        """Safely evaluates a string representation of a dictionary, handling numpy types."""
+        try:
+            # Replace numpy-specific float notation with standard float
+            val = val.replace("np.float64(", "").replace(")", "")
+            return ast.literal_eval(val)
+        except Exception as e:
+            return None
+
+    """
+    Decodes a dictionary column in a DataFrame into separate columns.
+
+    Parameters:
+        df (pd.DataFrame): The input DataFrame.
+        dic_column (str): The name of the column containing dictionaries.
+        mode (str): The mode of operation; 'append' to add new columns to the original DataFrame,
+                    'separate_df' to return a new DataFrame with only the new columns.
+
+    Returns:
+        pd.DataFrame: The DataFrame with the decoded dictionary columns.
+    """
+    if dic_column not in df.columns:
+        raise ValueError(f"Column '{dic_column}' not found in DataFrame.")
+
+    # Convert the column values to dictionaries
+    if (not isinstance(df[dic_column].iloc[0], dict)):
+        df[dic_column] = df[dic_column].astype(str).apply(safe_eval)
+
+    # Expand the dictionary column into separate columns
+    expanded_cols = pd.json_normalize(df[dic_column])
+
+    if mode == 'append':
+        # Append the new columns to the original DataFrame
+        result_df = pd.concat([df.drop(columns=[dic_column]), expanded_cols], axis=1)
+    elif mode == 'separate_df':
+        # Return only the new columns
+        result_df = expanded_cols
+    else:
+        raise ValueError("Invalid mode. Choose either 'append' or 'separate_df'.")
+
+    return result_df

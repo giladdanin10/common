@@ -1,9 +1,17 @@
-
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clusters_gdf_csv_file = None, output_shapefile=None, highlight_clusters=None, iteration_num=None, exclude_clusters=None,file_name_prefix="",max_num_clusters = 100):
+
+def CreateSpoofLayers(layer_name="spoof",
+                      spoof_cases_df_csv_file=None,
+                      spoof_clusters_gdf_csv_file = None,
+                      output_shapefile=None,
+                      highlight_clusters=None,
+                        iteration_num=None,
+                      exclude_clusters=None,
+                      file_name_prefix="",
+                      max_num_clusters = 100):
     """
     Creates QGIS layers with separate entry and exit points, lines, and polygons representing drift areas.
     The polygon's color matches the cluster's point layers, and entry points are slightly larger than exit points.
@@ -81,32 +89,43 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
     colormap = cm.get_cmap('tab20', 20)
     cluster_colors = {}
 
+
+    # Set seed for reproducibility
+    np.random.seed(0)
+
+    
+    
+
+
     # Generate a fixed colormap
     fixed_colormap = cm.get_cmap('gist_ncar', max_num_clusters)
 
-    # sequential_colors_list = [mcolors.to_hex(fixed_colormap(i / max_num_clusters)) for i in range(max_num_clusters)]
-    sequential_colors_list = [QColor(mcolors.to_hex(fixed_colormap(i / max_num_clusters))) for i in range(max_num_clusters)]
+    # Create shuffled colors
+    # shuffled_colors = [QColor(mcolors.to_hex(fixed_colormap(i / max_num_clusters))) for i in color_index]
 
-    # Shuffle the color order randomly    
+    # Create a dictionary with cluster numbers mapped to shuffled colors
+    # cluster_colors_bank = {str(i): shuffled_colors[i] for i in range(max_num_clusters)}
+    sequential_colors_list = [mcolors.to_hex(fixed_colormap(i / max_num_clusters)) for i in range(max_num_clusters)]
+
+    # Shuffle the color order randomly
     color_index = np.random.permutation(max_num_clusters)
     colors_list = [sequential_colors_list[i] for i in color_index]
 
-
-
-
     # Process points and lines
     if (spoof_cases_df_csv_file is not None):
-        # with open(spoof_cases_df_csv_file, newline='', encoding='utf-8') as f:
-        #     reader = csv.DictReader(f)
-        #     reader
-        #     for row in reader:
-
+        
         spoof_cases_df = pd.read_csv(spoof_cases_df_csv_file)
-        spoof_cases_df.sort_values(by=['cluster_num'], inplace=True)
-        cluster_ind = 0        
+        ind = 0
         for ind, row in spoof_cases_df.iterrows():
+        # with open(spoof_cases_df_csv_file, newline='', encoding='utf-8') as f:
+        #     reader = csv.DictReader(f)            
+           
+
+            # for row in reader:
                 try:
                     cluster_num = str(row['cluster_num'])
+                    print(f"{cluster_num}:{type(cluster_num)}")
+                    print(cluster_num_set)
                     # if (cluster_num==3):
                     #     print("cluster_num:",cluster_num)
 
@@ -115,17 +134,14 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
                     #     continue
                     if highlight_clusters is not None and cluster_num not in highlight_clusters:
                         continue
-                    
-                    if cluster_num not in cluster_num_set:
-                        cluster_ind = cluster_ind+1
-                        # print(cluster_ind)
+
+                    if cluster_num not in cluster_num_set:                        
                         cluster_nums.append(cluster_num)
                         cluster_num_set.add(cluster_num)
-                        temp = QColor(to_hex(colormap(len(cluster_colors) % colormap.N)))
-                        cluster_colors[cluster_num] = colors_list[cluster_ind]                    
-                        
-
-
+                        cluster_colors[cluster_num] = cluster_colors_bank[str(color_index[ind])]
+                        # print(cluster_colors.keys())
+                        ind = ind+1                        
+                    
                     entry_lat, entry_lon = float(row['entry_lat']), float(row['entry_lon'])
                     drift_lat, drift_lon = float(row['drift_lat']), float(row['drift_lon'])
                     exit_lat, exit_lon = float(row['exit_lat']), float(row['exit_lon'])
@@ -230,6 +246,8 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
     line_categories = []
     polygon_categories = []
 
+    print(cluster_colors.keys())
+    
     for cluster_num, color in cluster_colors.items():
         # Entry Points
         symbol_entry = QgsMarkerSymbol.defaultSymbol(entry_points_layer.geometryType())
