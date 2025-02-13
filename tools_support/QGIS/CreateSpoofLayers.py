@@ -3,7 +3,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clusters_gdf_csv_file = None, output_shapefile=None, highlight_clusters=None, iteration_num=None, exclude_clusters=None,file_name_prefix="",max_num_clusters = 100):
+def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters_gdf_file = None, output_shapefile=None, highlight_clusters=None, iteration_num=None, exclude_clusters=None,file_name_prefix="",max_num_clusters = 100):
     """
     Creates QGIS layers with separate entry and exit points, lines, and polygons representing drift areas.
     The polygon's color matches the cluster's point layers, and entry points are slightly larger than exit points.
@@ -19,8 +19,8 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
 
     # File paths
 
-    add_spoof_cases_layers = spoof_cases_df_csv_file is not None
-    add_drift_area_layer = spoof_clusters_gdf_csv_file is not None
+    add_spoof_cases_layers = spoof_cases_df_file is not None
+    add_drift_area_layer = spoof_clusters_gdf_file is not None
 
 
     # Remove existing layers with the same names
@@ -95,14 +95,24 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
 
 
     # Process points and lines
-    if (spoof_cases_df_csv_file is not None):
-        # with open(spoof_cases_df_csv_file, newline='', encoding='utf-8') as f:
+    if (spoof_cases_df_file is not None):
+        # with open(spoof_cases_df_file, newline='', encoding='utf-8') as f:
         #     reader = csv.DictReader(f)
         #     reader
         #     for row in reader:
 
-        spoof_cases_df = pd.read_csv(spoof_cases_df_csv_file)
+        spoof_cases_df = pd.read_csv(spoof_cases_df_file)
         spoof_cases_df.sort_values(by=['cluster_num'], inplace=True)
+
+        
+# filter by exclude_clusters
+        if exclude_clusters is not None:
+            spoof_cases_df = spoof_cases_df[~spoof_cases_df['cluster_num'].isin(exclude_clusters)]
+
+        if highlight_clusters is not None:
+            spoof_cases_df = spoof_cases_df[spoof_cases_df['cluster_num'].isin(highlight_clusters)]
+
+
         cluster_ind = 0        
         for ind, row in spoof_cases_df.iterrows():
                 try:
@@ -173,46 +183,89 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_csv_file=None,spoof_clus
     
     if (add_drift_area_layer):
         # Process polygons for drift_area
-        try:
-            with open(spoof_clusters_gdf_csv_file, newline='', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                rows = list(reader)
-                if rows:
-                    # Determine the iteration_num
-                    if iteration_num is None:
-                        iteration_num = max(int(row['iteration_num']) for row in rows if row['iteration_num'].isdigit())
 
-                    filtered_rows = [row for row in rows if int(row['iteration_num']) == iteration_num]
-                    for row in filtered_rows:
-                        cluster_num = row.get('cluster_num')
+        spoof_clusters_gdf_org = pd.read_csv(spoof_clusters_gdf_file)
 
-                        # Filter clusters based on include/exclude logic
-                        # if exclude_clusters and cluster_num in exclude_clusters:
-                        #     continue
-                        # if highlight_clusters and cluster_num not in highlight_clusters:
-                        #     continue
+# filter by iteration_num
+        if iteration_num is None:
+            iteration_num = spoof_clusters_gdf_org['iteration_num'].max()
 
-                        drift_area = row.get('drift_area')
-                        type_value = row.get('type')
+        spoof_clusters_gdf = spoof_clusters_gdf_org[spoof_clusters_gdf_org['iteration_num'] == iteration_num]
 
-                        try:
-                            if drift_area:
-                                points = [
-                                    QgsPointXY(float(coord.split()[0]), float(coord.split()[1]))
-                                    for coord in drift_area.replace('MULTIPOINT (', '').replace(')', '').split(',')
-                                ]
+# filter by exclude_clusters
+        if exclude_clusters is not None:
+            spoof_clusters_gdf = spoof_clusters_gdf[~spoof_clusters_gdf['cluster_num'].isin(exclude_clusters)]
 
-                                if len(points) > 2:
-                                    polygon = QgsGeometry.fromPolygonXY([points])
-                                    drift_feature = QgsFeature()
-                                    drift_feature.setGeometry(polygon)
-                                    drift_feature.setAttributes([cluster_num, type_value])
-                                    drift_area_provider.addFeature(drift_feature)
-                        except ValueError:
-                            continue
+        if highlight_clusters is not None:
+            spoof_clusters_gdf = spoof_clusters_gdf[spoof_clusters_gdf['cluster_num'].isin(highlight_clusters)]
 
-        except FileNotFoundError:
-            print(f"File not found: {spoof_clusters_gdf_csv_file}")
+        for ind, row in spoof_clusters_gdf.iterrows():
+            cluster_num = row['cluster_num']
+
+            # Filter clusters based on include/exclude logic
+            # if exclude_clusters and cluster_num in exclude_clusters:
+            #     continue
+            # if highlight_clusters and cluster_num not in highlight_clusters:
+            #     continue
+
+            drift_area = row['drift_area']
+
+            try:
+                if drift_area:
+                    points = [
+                        QgsPointXY(float(coord.split()[0]), float(coord.split()[1]))
+                        for coord in drift_area.replace('MULTIPOINT (', '').replace(')', '').split(',')
+                    ]
+
+                    if len(points) > 2:
+                        polygon = QgsGeometry.fromPolygonXY([points])
+                        drift_feature = QgsFeature()
+                        drift_feature.setGeometry(polygon)
+                        drift_feature.setAttributes([cluster_num])
+                        drift_area_provider.addFeature(drift_feature)
+            except ValueError:
+                continue
+
+        # try:            
+        #     with open(spoof_clusters_gdf_file, newline='', encoding='utf-8') as f:
+        #         reader = csv.DictReader(f)
+        #         rows = list(reader)
+        #         if rows:
+        #             # Determine the iteration_num
+        #             if iteration_num is None:
+        #                 iteration_num = max(int(row['iteration_num']) for row in rows if row['iteration_num'].isdigit())
+
+        #             filtered_rows = [row for row in rows if int(row['iteration_num']) == iteration_num]
+        #             for row in filtered_rows:
+        #                 cluster_num = row.get('cluster_num')
+
+        #                 # Filter clusters based on include/exclude logic
+        #                 # if exclude_clusters and cluster_num in exclude_clusters:
+        #                 #     continue
+        #                 # if highlight_clusters and cluster_num not in highlight_clusters:
+        #                 #     continue
+
+        #                 drift_area = row.get('drift_area')
+        #                 type_value = row.get('type')
+
+        #                 try:
+        #                     if drift_area:
+        #                         points = [
+        #                             QgsPointXY(float(coord.split()[0]), float(coord.split()[1]))
+        #                             for coord in drift_area.replace('MULTIPOINT (', '').replace(')', '').split(',')
+        #                         ]
+
+        #                         if len(points) > 2:
+        #                             polygon = QgsGeometry.fromPolygonXY([points])
+        #                             drift_feature = QgsFeature()
+        #                             drift_feature.setGeometry(polygon)
+        #                             drift_feature.setAttributes([cluster_num, type_value])
+        #                             drift_area_provider.addFeature(drift_feature)
+        #                 except ValueError:
+        #                     continue
+
+        # except FileNotFoundError:
+        #     print(f"File not found: {spoof_clusters_gdf_file}")
 
     # Add layers to the project
     QgsProject.instance().addMapLayer(entry_points_layer)

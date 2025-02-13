@@ -20,33 +20,34 @@ run_name = "20240901_spoofing_full"
 
 vessels_data_file = run_dir_base+run_name+"\\QGIS_in\\vessels_data.csv"
 # CreateSpoofLayers(layer_name = run_name,run_dir = run_dir_base+run_name,highlight_clusters=None)
-file_name_prefix = run_name.split("_")[0]+"_1000_1015_"
+# file_name_prefix = run_name.split("_")[0]+"_0100_0115_"
 file_name_prefix = ""
 
 
-spoof_cases_df_csv_file=run_dir_base+run_name+'\\spoof_cases_df\\spoof_cases_df.csv'
-spoof_clusters_gdf_csv_file=run_dir_base+run_name+'\\spoof_clusters_gdf\\spoof_clusters_gdf.csv'
+spoof_cases_df_file=run_dir_base+run_name+f'\\spoof_cases_df\\{file_name_prefix}spoof_cases_df.csv'
+spoof_clusters_gdf_file=run_dir_base+run_name+f'\\spoof_clusters_gdf\\{file_name_prefix}spoof_clusters_gdf.csv'
+
 
 
 
 
 CreateSpoofLayers(layer_name = run_name,
-                    spoof_cases_df_csv_file=spoof_cases_df_csv_file,
-                    spoof_clusters_gdf_csv_file=spoof_clusters_gdf_csv_file,
-                    highlight_clusters=None,exclude_clusters=None,file_name_prefix=file_name_prefix,iteration_num=None)
+                    spoof_cases_df_file=spoof_cases_df_file,
+                    spoof_clusters_gdf_file=spoof_clusters_gdf_file,
+                    highlight_clusters=0,exclude_clusters=-1,file_name_prefix=file_name_prefix,iteration_num=None)
 
 
-run_name = "20240901_spoofing"   
-spoof_cases_df_csv_file=run_dir_base+run_name+'\\spoof_cases_df\\spoof_cases_df_mod.csv'
-spoof_clusters_gdf_csv_file=run_dir_base+run_name+'\\spoof_clusters_gdf\\spoof_clusters_gdf_mod.csv'
-spoof_cases_df_csv_file=run_dir_base+run_name+'\\spoof_cases_df\\spoof_cases_df.csv'
-spoof_clusters_gdf_csv_file=run_dir_base+run_name+'\\spoof_clusters_gdf\\spoof_clusters_gdf.csv'
+# run_name = "20240901_spoofing"   
+# spoof_cases_df_file=run_dir_base+run_name+'\\spoof_cases_df\\spoof_cases_df_mod.csv'
+# spoof_clusters_gdf_file=run_dir_base+run_name+'\\spoof_clusters_gdf\\spoof_clusters_gdf_mod.csv'
+# spoof_cases_df_file=run_dir_base+run_name+'\\spoof_cases_df\\spoof_cases_df.csv'
+# spoof_clusters_gdf_file=run_dir_base+run_name+'\\spoof_clusters_gdf\\spoof_clusters_gdf.csv'
 
 
-CreateSpoofLayers(layer_name = run_name+"_mod",
-                    spoof_cases_df_csv_file=spoof_cases_df_csv_file,
-                    spoof_clusters_gdf_csv_file=spoof_clusters_gdf_csv_file,
-                    highlight_clusters=None,exclude_clusters=None,file_name_prefix=file_name_prefix,iteration_num=None)
+# CreateSpoofLayers(layer_name = run_name+"_mod",
+#                     spoof_cases_df_file=spoof_cases_df_file,
+#                     spoof_clusters_gdf_file=spoof_clusters_gdf_file,
+#                     highlight_clusters=None,exclude_clusters=None,file_name_prefix=file_name_prefix,iteration_num=None)
 
 
 
