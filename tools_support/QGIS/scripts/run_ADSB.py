@@ -30,14 +30,16 @@ for run_name in run_names:
     spoof_clusters_gdf_file=run_dir_base+run_name+f'\\spoof_clusters_gdf\\{file_name_prefix}spoof_clusters_gdf.csv'
 
 
-
+    layer_types=['entry_points','exit_points','drift_points','entry_exit_drift_lines','drift_areas']
+    # layer_types=['entry_points','exit_points','drift_points','entry_exit_drift_lines'] 
 
 
     CreateSpoofLayers(layer_name = run_name,
                         spoof_cases_df_file=spoof_cases_df_file,
                         spoof_clusters_gdf_file=spoof_clusters_gdf_file,
-                        highlight_clusters=[0,1],exclude_clusters=[-1]
-                        ,file_name_prefix=file_name_prefix,iteration_num=None)
+                        highlight_clusters=[0,1,2],exclude_clusters=[-1]
+                        ,file_name_prefix=file_name_prefix,iteration_num=None,
+                        layer_types=layer_types)
 
 
 # run_name = "20240901_spoofing"   

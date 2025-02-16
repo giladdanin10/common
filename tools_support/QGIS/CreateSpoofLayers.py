@@ -3,7 +3,16 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters_gdf_file = None, output_shapefile=None, highlight_clusters=None, iteration_num=None, exclude_clusters=None,file_name_prefix="",max_num_clusters = 100):
+def CreateSpoofLayers(layer_name="spoof",
+                      spoof_cases_df_file=None,
+                      spoof_clusters_gdf_file = None,
+                    output_shapefile=None,
+                      highlight_clusters=None,
+                        iteration_num=None, 
+                        exclude_clusters=None,
+                        file_name_prefix="",
+                        max_num_clusters = 100,
+                        layer_types = ['entry_points','exit_points','drift_point','lines','drift_area']):
     """
     Creates QGIS layers with separate entry and exit points, lines, and polygons representing drift areas.
     The polygon's color matches the cluster's point layers, and entry points are slightly larger than exit points.
@@ -19,8 +28,8 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
 
     # File paths
 
-    add_spoof_cases_layers = spoof_cases_df_file is not None
-    add_drift_area_layer = spoof_clusters_gdf_file is not None
+    # add_spoof_cases_layers = spoof_cases_df_file is not None
+    # add_drift_area_layer = spoof_clusters_gdf_file is not None
 
 
     # Remove existing layers with the same names
@@ -35,19 +44,23 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
             QgsProject.instance().removeMapLayer(layer.id())
 
     # Create memory layers
-    entry_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_entry_points', 'memory')
-    provider_entry = entry_points_layer.dataProvider()
+    if ('entry_points' in layer_types):
+        entry_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_entry_points', 'memory')
+        provider_entry = entry_points_layer.dataProvider()
+    
+    if ('exit_points' in layer_types):
+        exit_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_exit_points', 'memory')
+        provider_exit = exit_points_layer.dataProvider()
 
-    exit_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_exit_points', 'memory')
-    provider_exit = exit_points_layer.dataProvider()
+    if ('drift_points') in layer_types:
+        drift_point_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_drift_point', 'memory')
+        provider_drift = drift_point_layer.dataProvider()
 
-    target_points_layer = QgsVectorLayer('Point?crs=EPSG:4326', layer_name + '_drift_point', 'memory')
-    provider_target = target_points_layer.dataProvider()
+    if ('entry_exit_drift_lines') in layer_types:
+        line_layer = QgsVectorLayer('LineString?crs=EPSG:4326', layer_name + '_lines', 'memory')
+        line_provider = line_layer.dataProvider()
 
-    line_layer = QgsVectorLayer('LineString?crs=EPSG:4326', layer_name + '_lines', 'memory')
-    line_provider = line_layer.dataProvider()
-
-    if add_drift_area_layer:
+    if ('drift_areas') in layer_types:
         drift_area_layer = QgsVectorLayer('Polygon?crs=EPSG:4326', layer_name + '_drift_area', 'memory')
         drift_area_provider = drift_area_layer.dataProvider()
 
@@ -59,21 +72,36 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
         QgsField('type', QVariant.String),
         QgsField('vessel_id', QVariant.String)
     ]
-    provider_entry.addAttributes(fields)
-    provider_exit.addAttributes(fields)
-    provider_target.addAttributes(fields)
-    line_provider.addAttributes([QgsField('cluster_num', QVariant.String)])
+
+    if ('entry_points' in layer_types):
+        provider_entry.addAttributes(fields)
+
+    if ('exit_points' in layer_types):
+        provider_exit.addAttributes(fields)
+
+    if ('drift_points') in layer_types:
+        provider_drift.addAttributes(fields)
+
+    if ('entry_exit_drift_lines') in layer_types:
+        line_provider.addAttributes([QgsField('cluster_num', QVariant.String)])
 
 
-    if add_drift_area_layer:
+    if ('drift_areas') in layer_types:
         drift_area_provider.addAttributes([QgsField('cluster_num', QVariant.String), QgsField('type', QVariant.String)])
 
-    entry_points_layer.updateFields()
-    exit_points_layer.updateFields()
-    target_points_layer.updateFields()
-    line_layer.updateFields()
+    if ('entry_points' in layer_types):
+        entry_points_layer.updateFields()
 
-    if add_drift_area_layer:
+    if ('exit_points' in layer_types):
+        exit_points_layer.updateFields()
+
+    if ('drift_points') in layer_types:
+        drift_point_layer.updateFields()
+
+    if ('entry_exit_drift_lines') in layer_types:        
+        line_layer.updateFields()
+
+    if ('drift_areas') in layer_types:
         drift_area_layer.updateFields()
 
     cluster_nums = []
@@ -146,87 +174,90 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
                         continue
 
                     # Entry Point
-                    entry_feature = QgsFeature()
-                    entry_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(entry_lon, entry_lat)))
-                    entry_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
-                    provider_entry.addFeature(entry_feature)
+                    if ('entry_points' in layer_types):
+                        entry_feature = QgsFeature()
+                        entry_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(entry_lon, entry_lat)))
+                        entry_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
+                        provider_entry.addFeature(entry_feature)
 
                     # Exit Point
-                    exit_feature = QgsFeature()
-                    exit_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(exit_lon, exit_lat)))
-                    exit_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
-                    provider_exit.addFeature(exit_feature)
+                    if ('exit_points' in layer_types):
+                        exit_feature = QgsFeature()
+                        exit_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(exit_lon, exit_lat)))
+                        exit_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
+                        provider_exit.addFeature(exit_feature)
 
-                    # Target Point
-                    target_feature = QgsFeature()
-                    target_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(drift_lon, drift_lat)))
-                    target_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
-                    provider_target.addFeature(target_feature)
+                    # drift Point
+                    if ('drift_points') in layer_types:
+                        drift_feature = QgsFeature()
+                        drift_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(drift_lon, drift_lat)))
+                        drift_feature.setAttributes([cluster_num, row['start_time'], row['end_time'], row['type'], row['vessel_id']])
+                        provider_drift.addFeature(drift_feature)
 
                     # Lines
-                    line1 = QgsFeature()
-                    line1.setGeometry(QgsGeometry.fromPolylineXY([
-                        QgsPointXY(entry_lon, entry_lat),
-                        QgsPointXY(drift_lon, drift_lat)
-                    ]))
-                    line1.setAttributes([cluster_num])
-                    line_provider.addFeature(line1)
+                    if ('entry_exit_drift_lines') in layer_types:
+                        line1 = QgsFeature()
+                        line1.setGeometry(QgsGeometry.fromPolylineXY([
+                            QgsPointXY(entry_lon, entry_lat),
+                            QgsPointXY(drift_lon, drift_lat)
+                        ]))
+                        line1.setAttributes([cluster_num])
+                        line_provider.addFeature(line1)
 
-                    line2 = QgsFeature()
-                    line2.setGeometry(QgsGeometry.fromPolylineXY([
-                        QgsPointXY(exit_lon, exit_lat),
-                        QgsPointXY(drift_lon, drift_lat)
-                    ]))
-                    line2.setAttributes([cluster_num])
-                    line_provider.addFeature(line2)
+                        line2 = QgsFeature()
+                        line2.setGeometry(QgsGeometry.fromPolylineXY([
+                            QgsPointXY(exit_lon, exit_lat),
+                            QgsPointXY(drift_lon, drift_lat)
+                        ]))
+                        line2.setAttributes([cluster_num])
+                        line_provider.addFeature(line2)
 
                 except ValueError:
                     continue
     
-    if (add_drift_area_layer):
+        if ('drift_areas') in layer_types:
         # Process polygons for drift_area
-
-        spoof_clusters_gdf_org = pd.read_csv(spoof_clusters_gdf_file)
+            spoof_clusters_gdf_org = pd.read_csv(spoof_clusters_gdf_file)
 
 # filter by iteration_num
-        if iteration_num is None:
-            iteration_num = spoof_clusters_gdf_org['iteration_num'].max()
+            if iteration_num is None:
+                iteration_num = spoof_clusters_gdf_org['iteration_num'].max()
 
-        spoof_clusters_gdf = spoof_clusters_gdf_org[spoof_clusters_gdf_org['iteration_num'] == iteration_num]
+            spoof_clusters_gdf = spoof_clusters_gdf_org[spoof_clusters_gdf_org['iteration_num'] == iteration_num]
 
 # filter by exclude_clusters
-        if exclude_clusters is not None:
-            spoof_clusters_gdf = spoof_clusters_gdf[~spoof_clusters_gdf['cluster_num'].isin(exclude_clusters)]
+            if exclude_clusters is not None:
+                spoof_clusters_gdf = spoof_clusters_gdf[~spoof_clusters_gdf['cluster_num'].isin(exclude_clusters)]
 
-        if highlight_clusters is not None:
-            spoof_clusters_gdf = spoof_clusters_gdf[spoof_clusters_gdf['cluster_num'].isin(highlight_clusters)]
+            if highlight_clusters is not None:
+                spoof_clusters_gdf = spoof_clusters_gdf[spoof_clusters_gdf['cluster_num'].isin(highlight_clusters)]
 
-        for ind, row in spoof_clusters_gdf.iterrows():
-            cluster_num = row['cluster_num']
+            for ind, row in spoof_clusters_gdf.iterrows():
+                cluster_num = row['cluster_num']
 
-            # Filter clusters based on include/exclude logic
-            # if exclude_clusters and cluster_num in exclude_clusters:
-            #     continue
-            # if highlight_clusters and cluster_num not in highlight_clusters:
-            #     continue
+                # Filter clusters based on include/exclude logic
+                # if exclude_clusters and cluster_num in exclude_clusters:
+                #     continue
+                # if highlight_clusters and cluster_num not in highlight_clusters:
+                #     continue
 
-            drift_area = row['drift_area']
+                drift_area = row['drift_area']
 
-            try:
-                if drift_area:
-                    points = [
-                        QgsPointXY(float(coord.split()[0]), float(coord.split()[1]))
-                        for coord in drift_area.replace('MULTIPOINT (', '').replace(')', '').split(',')
-                    ]
+                try:
+                    if drift_area:
+                        points = [
+                            QgsPointXY(float(coord.split()[0]), float(coord.split()[1]))
+                            for coord in drift_area.replace('MULTIPOINT (', '').replace(')', '').split(',')
+                        ]
 
-                    if len(points) > 2:
-                        polygon = QgsGeometry.fromPolygonXY([points])
-                        drift_feature = QgsFeature()
-                        drift_feature.setGeometry(polygon)
-                        drift_feature.setAttributes([cluster_num])
-                        drift_area_provider.addFeature(drift_feature)
-            except ValueError:
-                continue
+                        if len(points) > 2:
+                            polygon = QgsGeometry.fromPolygonXY([points])
+                            drift_feature = QgsFeature()
+                            drift_feature.setGeometry(polygon)
+                            drift_feature.setAttributes([cluster_num])
+                            drift_area_provider.addFeature(drift_feature)
+                except ValueError:
+                    continue
 
         # try:            
         #     with open(spoof_clusters_gdf_file, newline='', encoding='utf-8') as f:
@@ -270,58 +301,84 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
         #     print(f"File not found: {spoof_clusters_gdf_file}")
 
     # Add layers to the project
-    QgsProject.instance().addMapLayer(entry_points_layer)
-    QgsProject.instance().addMapLayer(exit_points_layer)
-    QgsProject.instance().addMapLayer(target_points_layer)
-    QgsProject.instance().addMapLayer(line_layer)
+    if ('entry_points' in layer_types):
+        QgsProject.instance().addMapLayer(entry_points_layer)
 
-    if (add_drift_area_layer):
+    if ('exit_points' in layer_types):
+        QgsProject.instance().addMapLayer(exit_points_layer)
+
+    if ('drift_points') in layer_types:
+        QgsProject.instance().addMapLayer(drift_point_layer)
+
+    if ('entry_exit_drift_lines') in layer_types:
+        QgsProject.instance().addMapLayer(line_layer)
+
+    if ('drift_areas') in layer_types:
         QgsProject.instance().addMapLayer(drift_area_layer)
 
     # Apply categorized styling
     categories_entry = []
     categories_exit = []
-    categories_target = []
+    categories_drift = []
     line_categories = []
     polygon_categories = []
 
     for cluster_num, color in cluster_colors.items():
         # Entry Points
-        symbol_entry = QgsMarkerSymbol.defaultSymbol(entry_points_layer.geometryType())
-        symbol_entry.symbolLayer(0).setColor(color)
-        symbol_entry.setSize(4)  # Larger size for entry points
+        if ('entry_points' in layer_types):
+            symbol_entry = QgsMarkerSymbol.defaultSymbol(entry_points_layer.geometryType())
+            symbol_entry.symbolLayer(0).setColor(color)
+            symbol_entry.setSize(4)  # Larger size for entry points
 
         # Exit Points
-        symbol_exit = QgsMarkerSymbol.defaultSymbol(exit_points_layer.geometryType())
-        symbol_exit.symbolLayer(0).setColor(color)
-        symbol_exit.setSize(3)  # Smaller size for exit points
+        if ('exit_points' in layer_types):
+            symbol_exit = QgsMarkerSymbol.defaultSymbol(exit_points_layer.geometryType())
+            symbol_exit.symbolLayer(0).setColor(color)
+            symbol_exit.setSize(3)  # Smaller size for exit points
 
-        # Target Points
-        symbol_target = QgsMarkerSymbol.defaultSymbol(target_points_layer.geometryType())
-        symbol_target.symbolLayer(0).setColor(color)
-        symbol_target.setSize(10)
+        # drift Points
+        if ('drift_points') in layer_types:
+            symbol_drift = QgsMarkerSymbol.defaultSymbol(drift_point_layer.geometryType())
+            symbol_drift.symbolLayer(0).setColor(color)
+            symbol_drift.setSize(10)
 
         # Lines
-        line_symbol = QgsLineSymbol.defaultSymbol(line_layer.geometryType())
-        line_symbol.symbolLayer(0).setColor(color)
+        if ('entry_exit_drift_lines') in layer_types:
+            line_symbol = QgsLineSymbol.defaultSymbol(line_layer.geometryType())
+            line_symbol.symbolLayer(0).setColor(color)
 
         # Polygons
-        if (add_drift_area_layer):
+        if ('drift_areas') in layer_types:
             polygon_symbol = QgsFillSymbol.defaultSymbol(drift_area_layer.geometryType())
             polygon_symbol.setColor(color)
             polygon_symbol.setOpacity(0.4)  # Set opacity to 40%
 
-        categories_entry.append(QgsRendererCategory(cluster_num, symbol_entry, cluster_num))
-        categories_exit.append(QgsRendererCategory(cluster_num, symbol_exit, cluster_num))
-        categories_target.append(QgsRendererCategory(cluster_num, symbol_target, cluster_num))
-        line_categories.append(QgsRendererCategory(cluster_num, line_symbol, cluster_num))
-        if (add_drift_area_layer):
+        if ('entry_points' in layer_types):
+            categories_entry.append(QgsRendererCategory(cluster_num, symbol_entry, cluster_num))
+
+        if ('exit_points' in layer_types):             
+            categories_exit.append(QgsRendererCategory(cluster_num, symbol_exit, cluster_num))
+
+        if ('drift_points') in layer_types:
+            categories_drift.append(QgsRendererCategory(cluster_num, symbol_drift, cluster_num))
+
+        if ('entry_exit_drift_lines') in layer_types:
+            line_categories.append(QgsRendererCategory(cluster_num, line_symbol, cluster_num))
+
+        if ('drift_areas') in layer_types:
             polygon_categories.append(QgsRendererCategory(cluster_num, polygon_symbol, cluster_num))
 
-    entry_points_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_entry))
-    exit_points_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_exit))
-    target_points_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_target))
-    line_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', line_categories))
+    if ('entry_points' in layer_types):
+        entry_points_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_entry))
+        
+    if ('exit_points' in layer_types):
+        exit_points_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_exit))
 
-    if (add_drift_area_layer):
+    if ('drift_points') in layer_types:
+        drift_point_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', categories_drift))
+        
+    if ('entry_exit_drift_lines') in layer_types:
+        line_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', line_categories))
+
+    if ('drift_areas') in layer_types:
         drift_area_layer.setRenderer(QgsCategorizedSymbolRenderer('cluster_num', polygon_categories))
