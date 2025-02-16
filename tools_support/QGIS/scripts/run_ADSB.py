@@ -13,28 +13,31 @@ RestartProject()
 
 run_dir_base = r'C:\work\code\TipAndQue-algo\src\test\run_results\\'
 # run_name = "20240901_spoofing_hop_N_std_th_1"   
-run_name = "20240901_spoofing_full"   
+run_names = ["20240901_spoofing_full","20240901_spoofing_full_check_clusters"]   
+
+run_names = ["20240901_spoofing_full_check_clusters"]   
+
+for run_name in run_names:
+    #in_dir = r'C:\work\code\TipAndQue-algo\src\test\pipline\spoof\testing\temp_output\\'
+
+    vessels_data_file = run_dir_base+run_name+"\\QGIS_in\\vessels_data.csv"
+    # CreateSpoofLayers(layer_name = run_name,run_dir = run_dir_base+run_name,highlight_clusters=None)
+    file_name_prefix = run_name.split("_")[0]+"_0930_0945_"
+    # file_name_prefix = ""
 
 
-#in_dir = r'C:\work\code\TipAndQue-algo\src\test\pipline\spoof\testing\temp_output\\'
-
-vessels_data_file = run_dir_base+run_name+"\\QGIS_in\\vessels_data.csv"
-# CreateSpoofLayers(layer_name = run_name,run_dir = run_dir_base+run_name,highlight_clusters=None)
-# file_name_prefix = run_name.split("_")[0]+"_0100_0115_"
-file_name_prefix = ""
-
-
-spoof_cases_df_file=run_dir_base+run_name+f'\\spoof_cases_df\\{file_name_prefix}spoof_cases_df.csv'
-spoof_clusters_gdf_file=run_dir_base+run_name+f'\\spoof_clusters_gdf\\{file_name_prefix}spoof_clusters_gdf.csv'
+    spoof_cases_df_file=run_dir_base+run_name+f'\\spoof_cases_df\\{file_name_prefix}spoof_cases_df.csv'
+    spoof_clusters_gdf_file=run_dir_base+run_name+f'\\spoof_clusters_gdf\\{file_name_prefix}spoof_clusters_gdf.csv'
 
 
 
 
 
-CreateSpoofLayers(layer_name = run_name,
-                    spoof_cases_df_file=spoof_cases_df_file,
-                    spoof_clusters_gdf_file=spoof_clusters_gdf_file,
-                    highlight_clusters=0,exclude_clusters=-1,file_name_prefix=file_name_prefix,iteration_num=None)
+    CreateSpoofLayers(layer_name = run_name,
+                        spoof_cases_df_file=spoof_cases_df_file,
+                        spoof_clusters_gdf_file=spoof_clusters_gdf_file,
+                        highlight_clusters=[0,1],exclude_clusters=[-1]
+                        ,file_name_prefix=file_name_prefix,iteration_num=None)
 
 
 # run_name = "20240901_spoofing"   

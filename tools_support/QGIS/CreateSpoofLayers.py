@@ -104,7 +104,6 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
         spoof_cases_df = pd.read_csv(spoof_cases_df_file)
         spoof_cases_df.sort_values(by=['cluster_num'], inplace=True)
 
-        
 # filter by exclude_clusters
         if exclude_clusters is not None:
             spoof_cases_df = spoof_cases_df[~spoof_cases_df['cluster_num'].isin(exclude_clusters)]
@@ -112,8 +111,11 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
         if highlight_clusters is not None:
             spoof_cases_df = spoof_cases_df[spoof_cases_df['cluster_num'].isin(highlight_clusters)]
 
+        
 
-        cluster_ind = 0        
+        cluster_ind = 0    
+        highlight_clusters_str = [str(i) for i in highlight_clusters]
+    
         for ind, row in spoof_cases_df.iterrows():
                 try:
                     cluster_num = str(row['cluster_num'])
@@ -123,7 +125,7 @@ def CreateSpoofLayers(layer_name="spoof",spoof_cases_df_file=None,spoof_clusters
                     # Filter clusters based on include/exclude logic
                     # if exclude_clusters and cluster_num in exclude_clusters:
                     #     continue
-                    if highlight_clusters is not None and cluster_num not in highlight_clusters:
+                    if highlight_clusters_str is not None and cluster_num not in highlight_clusters_str:
                         continue
                     
                     if cluster_num not in cluster_num_set:
