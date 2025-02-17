@@ -141,9 +141,12 @@ def CreateSpoofLayers(layer_name="spoof",
 
         
 
-        cluster_ind = 0    
-        highlight_clusters_str = [str(i) for i in highlight_clusters]
-    
+        cluster_ind = 0
+        if (highlight_clusters) is not None:    
+            highlight_clusters_str = [str(i) for i in highlight_clusters]
+        else:
+            highlight_clusters_str = None
+            
         for ind, row in spoof_cases_df.iterrows():
                 try:
                     cluster_num = str(row['cluster_num'])
@@ -164,14 +167,24 @@ def CreateSpoofLayers(layer_name="spoof",
                         temp = QColor(to_hex(colormap(len(cluster_colors) % colormap.N)))
                         cluster_colors[cluster_num] = colors_list[cluster_ind]                    
                         
+                    # entry_lat = None
+                    # entry_lon = None
+                    # drift_lat = None
+                    # drift_lon = None
+                    # exit_lat = None
+                    # exit_lon = None
 
+                    if ('entry_points' in layer_types):
+                        entry_lat, entry_lon = float(row['entry_lat']), float(row['entry_lon'])
 
-                    entry_lat, entry_lon = float(row['entry_lat']), float(row['entry_lon'])
-                    drift_lat, drift_lon = float(row['drift_lat']), float(row['drift_lon'])
-                    exit_lat, exit_lon = float(row['exit_lat']), float(row['exit_lon'])
+                    if ('drift_points') in layer_types:
+                        drift_lat, drift_lon = float(row['drift_lat']), float(row['drift_lon'])
 
-                    if not (entry_lat and entry_lon and drift_lat and drift_lon and exit_lat and exit_lon):
-                        continue
+                    if ('exit_points' in layer_types):    
+                        exit_lat, exit_lon = float(row['exit_lat']), float(row['exit_lon'])
+
+                    # if not (entry_lat and entry_lon and drift_lat and drift_lon and exit_lat and exit_lon):
+                    #     continue
 
                     # Entry Point
                     if ('entry_points' in layer_types):
