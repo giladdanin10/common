@@ -113,7 +113,7 @@ def CompareDfs(df1, df2, to_print=True, ID_columns=None, mode='check_existence',
             my_print(f,'\n')
         
         if ('only_in_df2' in diff_dic):
-            my_print(f,f'{ID_columns[0]}\'s only in df1:\n')
+            my_print(f,f'{ID_columns[0]}\'s only in df2:\n')
             for i,id_val in enumerate(diff_dic['only_in_df2']):
                 my_print(f,f'{id_val}\n')
             my_print(f,'\n')

@@ -12,6 +12,7 @@ def CreateSpoofLayers(layer_name="spoof",
                         exclude_clusters=None,
                         file_name_prefix="",
                         max_num_clusters = 100,
+                        drift_point_size = 10,
                         layer_types = ['entry_points','exit_points','drift_point','lines','drift_area']):
     """
     Creates QGIS layers with separate entry and exit points, lines, and polygons representing drift areas.
@@ -231,7 +232,7 @@ def CreateSpoofLayers(layer_name="spoof",
         if ('drift_areas') in layer_types:
         # Process polygons for drift_area
             spoof_clusters_gdf_org = pd.read_csv(spoof_clusters_gdf_file)
-
+            
 # filter by iteration_num
             if iteration_num is None:
                 iteration_num = spoof_clusters_gdf_org['iteration_num'].max()
@@ -353,7 +354,7 @@ def CreateSpoofLayers(layer_name="spoof",
         if ('drift_points') in layer_types:
             symbol_drift = QgsMarkerSymbol.defaultSymbol(drift_point_layer.geometryType())
             symbol_drift.symbolLayer(0).setColor(color)
-            symbol_drift.setSize(10)
+            symbol_drift.setSize(drift_point_size)
 
         # Lines
         if ('entry_exit_drift_lines') in layer_types:

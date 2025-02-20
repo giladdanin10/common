@@ -13,9 +13,13 @@ RestartProject()
 
 run_dir_base = r'C:\work\code\TipAndQue-algo\src\test\run_results\\'
 # run_name = "20240901_spoofing_hop_N_std_th_1"   
-run_names = ["20240901_spoofing_full","20240901_spoofing_full_check_clusters"]   
+# run_names = ["20240901_spoofing_full","20240901_spoofing_full_check_clusters"]   
 
 run_names = ["20240901_spoofing_alina","20240901_spoofing_full"]   
+run_names = ["20240901_spoofing_alina","20240901_spoofing_compare_with_alina"]   
+
+run_names = ["20240901_spoofing_compare_with_alina","20240901_spoofing_full"]   
+run_names = ["20240901_spoofing_full"]   
   
 
 for run_name in run_names:
@@ -23,8 +27,8 @@ for run_name in run_names:
 
     vessels_data_file = run_dir_base+run_name+"\\QGIS_in\\vessels_data.csv"
     # CreateSpoofLayers(layer_name = run_name,run_dir = run_dir_base+run_name,highlight_clusters=None)
-    file_name_prefix = run_name.split("_")[0]+"_2330_2345_"
-    # file_name_prefix = ""
+    file_name_prefix = run_name.split("_")[0]+"_1230_1245_"
+    file_name_prefix = ""
 # 2024901_2330_2345_spoof_cases_df
 
     spoof_cases_df_file=run_dir_base+run_name+f'\\spoof_cases_df\\{file_name_prefix}spoof_cases_df.csv'
@@ -32,7 +36,7 @@ for run_name in run_names:
 
 
     layer_types=['entry_points','exit_points','drift_points','entry_exit_drift_lines','drift_areas']
-    layer_types=['drift_points'] 
+    # layer_types=['drift_points'] 
 
 
     CreateSpoofLayers(layer_name = run_name,
@@ -40,7 +44,8 @@ for run_name in run_names:
                         spoof_clusters_gdf_file=spoof_clusters_gdf_file,
                         highlight_clusters=None,exclude_clusters=None
                         ,file_name_prefix=file_name_prefix,iteration_num=None,
-                        layer_types=layer_types)
+                        layer_types=layer_types,
+                        drift_point_size=10)
 
 
 # run_name = "20240901_spoofing"   
