@@ -3,7 +3,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-def CreateSpoofLayers(layer_name="spoof",
+def CreateSpoofLayers_events(layer_name="spoof",
                       spoof_cases_df_file=None,
                       spoof_events_gdf_file = None,
                     output_shapefile=None,
@@ -73,7 +73,7 @@ def CreateSpoofLayers(layer_name="spoof",
         QgsField('start_time', QVariant.String),
         QgsField('end_time', QVariant.String),
         QgsField('type', QVariant.String),
-        QgsField('vessel_id', QVariant.String)
+        QgsField('vessel_id', QVariant.String),        
     ]
 
     if ('entry_points' in layer_types):
