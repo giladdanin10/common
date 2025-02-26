@@ -240,6 +240,7 @@ def CreateSpoofLayers_events(layer_name="spoof",
                 iteration_num = spoof_events_gdf_org['iteration_num'].max()
 
             spoof_events_gdf = spoof_events_gdf_org[spoof_events_gdf_org['iteration_num'] == iteration_num]
+
 # filter by exclude_events
             if exclude_events is not None:
                 spoof_events_gdf = spoof_events_gdf[~spoof_events_gdf['event_id'].isin(exclude_events)]
@@ -255,7 +256,10 @@ def CreateSpoofLayers_events(layer_name="spoof",
                 #     continue
                 # if highlight_events and event_id not in highlight_events:
                 #     continue
+                print('ind:',ind)
                 drift_area = row['drift_area']
+                if (ind==167):
+                    print("drift_area:",drift_area)
 
                 try:
                     if drift_area:
